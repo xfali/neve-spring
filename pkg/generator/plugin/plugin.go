@@ -20,6 +20,7 @@ package plugin
 import (
 	"io"
 	"k8s.io/gengo/generator"
+	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
 )
 
@@ -27,7 +28,7 @@ type Plugin interface {
 	Name() string
 	Annotation() string
 	CouldHandle(t *types.Type) bool
-	Generate(ctx *generator.Context, w io.Writer, t *types.Type) (err error)
+	Generate(ctx *generator.Context, imports namer.ImportTracker, w io.Writer, t *types.Type) (err error)
 }
 
 type Manager interface {

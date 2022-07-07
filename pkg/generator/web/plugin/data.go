@@ -22,6 +22,7 @@ import (
 	"github.com/xfali/neve-spring/pkg/generator/markerdefs"
 	"io"
 	"io/ioutil"
+	"k8s.io/gengo/namer"
 	"net/http"
 	"os"
 	"sigs.k8s.io/controller-tools/pkg/markers"
@@ -175,7 +176,7 @@ func (p *ginPlugin) Name() string {
 	return "web:gin"
 }
 
-func (p *ginPlugin) Generate(ctx *generator.Context, w io.Writer, t *types.Type) (err error) {
+func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker, w io.Writer, t *types.Type) (err error) {
 	meta, err := p.parseType(t)
 	if err != nil {
 		return err
