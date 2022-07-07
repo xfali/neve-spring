@@ -42,6 +42,7 @@ type Method struct {
 
 type GinMetadata struct {
 	Name       string
+	TypeName   string
 	Controller ControllerMarker
 	Methods    []*Method
 }
@@ -99,7 +100,8 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 	}
 	imports.AddType(t)
 	ret := &GinMetadata{
-		Name: t.Name.Name,
+		Name:     t.Name.Name,
+		TypeName: imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name,
 	}
 	comments := MergeComments(t)
 	for _, c := range comments {
