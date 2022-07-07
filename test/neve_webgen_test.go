@@ -59,6 +59,8 @@ func (arg *cArgs) String() string {
 
 func TestWebGen(t *testing.T) {
 	g := args.Default().WithoutDefaultFlagParsing()
+	g.OutputBase = "."
+	g.OutputFileBaseName = "zz_generated"
 	b, err := NewBuilder(g)
 	if err != nil {
 		t.Fatal(err)

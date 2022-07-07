@@ -1,0 +1,30 @@
+{{- $TypeName := .Name -}}
+
+type Neve{{.Name}}Proxy_ struct {
+	log  xlog.Logger
+	HLog loghttp.HttpLogger `inject:""`
+}
+
+func NewNeve{{.Name}}Proxy() * Neve{{.Name}}Proxy_ {
+	return &Neve{{.Name}}Proxy_{
+		log: xlog.GetLogger(),
+	}
+}
+
+func (h *Neve{{.Name}}Proxy_) HttpRoutes(engine gin.IRouter) {
+	{{- range .Methods }}
+	{{- if .RequestMapping.Flag }}
+	engine.{{.RequestMapping.Method}}("{{.RequestMapping.Value}}", h._proxy{{.Name}})
+	{{- end}}
+	{{- end}}
+}
+
+{{- range .Methods }}
+
+{{ if .RequestMapping.Flag }}
+func (h *Neve{{$TypeName}}Proxy_) _proxy{{.Name}} (ctx *gin.Context) {
+
+}
+{{ end }}
+
+{{- end}}

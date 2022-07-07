@@ -21,6 +21,9 @@ import (
 	"fmt"
 	"github.com/xfali/neve-spring/pkg/generator/markerdefs"
 	"io"
+	"io/ioutil"
+	"net/http"
+	"os"
 	"sigs.k8s.io/controller-tools/pkg/markers"
 	"strings"
 
@@ -31,11 +34,15 @@ import (
 type Method struct {
 	Name           string
 	RequestMapping RequestMappingMarker
+	RequestParam   RequestParamMarker
+	RequestHeader  RequestHeaderMarker
+	RequestBody    RequestBodyMarker
 }
 
 type GinMetadata struct {
+	Name       string
 	Controller ControllerMarker
-	Methods    []Method
+	Methods    []*Method
 }
 
 type ginPlugin struct {
@@ -46,7 +53,12 @@ type ginPlugin struct {
 }
 
 func NewGinPlugin(annotation string) *ginPlugin {
+	tmpl, err := ioutil.ReadFile("../pkg/generator/web/template/gin.tmpl")
+	if err != nil {
+		panic(err)
+	}
 	return &ginPlugin{
+		template:         string(tmpl),
 		annotation:       annotation,
 		structAnnotation: annotation + "controller",
 		methodAnnotation: []string{
@@ -85,7 +97,9 @@ func (p *ginPlugin) parseType(t *types.Type) (*GinMetadata, error) {
 		return nil, fmt.Errorf("Type: %s without method. ", t.Name)
 	}
 
-	ret := &GinMetadata{}
+	ret := &GinMetadata{
+		Name: t.Name.Name,
+	}
 	comments := MergeComments(t)
 	for _, c := range comments {
 		if c == "" {
@@ -102,19 +116,54 @@ func (p *ginPlugin) parseType(t *types.Type) (*GinMetadata, error) {
 		}
 	}
 	for mname, mtype := range t.Methods {
-		m := Method{}
+		m := &Method{}
 		m.Name = mname
 		comments := MergeComments(mtype)
 		for _, c := range comments {
 			if c == "" {
 				continue
 			}
-			set, err := markerdefs.Parse(c, &m.RequestMapping)
-			if err != nil {
-				return nil, err
-			} else if set {
-				ret.Methods = append(ret.Methods, m)
-				break
+			if !m.RequestMapping.IsSet() {
+				set, err := markerdefs.Parse(c, &m.RequestMapping)
+				if err != nil {
+					return nil, err
+				} else if set {
+					m.RequestMapping.Set(true)
+					if m.RequestMapping.Method == "" {
+						m.RequestMapping.Method = http.MethodGet
+					}
+					ret.Methods = append(ret.Methods, m)
+					continue
+				}
+			}
+
+			if !m.RequestParam.IsSet() {
+				set, err := markerdefs.Parse(c, &m.RequestParam)
+				if err != nil {
+					return nil, err
+				} else if set {
+					m.RequestParam.Set(true)
+					continue
+				}
+			}
+			if !m.RequestHeader.IsSet() {
+				set, err := markerdefs.Parse(c, &m.RequestHeader)
+				if err != nil {
+					return nil, err
+				} else if set {
+					m.RequestHeader.Set(true)
+					continue
+				}
+			}
+
+			if !m.RequestBody.IsSet() {
+				set, err := markerdefs.Parse(c, &m.RequestBody)
+				if err != nil {
+					return nil, err
+				} else if set {
+					m.RequestBody.Set(true)
+					continue
+				}
 			}
 		}
 	}
@@ -135,6 +184,7 @@ func (p *ginPlugin) Generate(ctx *generator.Context, w io.Writer, t *types.Type)
 		// not set
 		return nil
 	}
+	w = io.MultiWriter(w, os.Stderr)
 	sw := generator.NewSnippetWriter(w, ctx, delimiterLeft, delimiterRight)
 	sw.Do(p.template, meta)
 	return sw.Error()
@@ -156,8 +206,9 @@ func (ControllerMarker) Help() *markers.DefinitionHelp {
 }
 
 type RequestMappingMarker struct {
-	Value  string `marker:"value"`
-	Method string `marker:"method"`
+	markerdefs.Flag `marker:",optional"`
+	Value           string `marker:"value"`
+	Method          string `marker:"method"`
 }
 
 func (RequestMappingMarker) Help() *markers.DefinitionHelp {
@@ -171,9 +222,69 @@ func (RequestMappingMarker) Help() *markers.DefinitionHelp {
 	}
 }
 
+type RequestParamMarker struct {
+	markerdefs.Flag `marker:",optional"`
+	Name            string `marker:"name"`
+	Default         string `marker:"default,optional"`
+	Require         bool   `marker:"require,optional"`
+}
+
+func (RequestParamMarker) Help() *markers.DefinitionHelp {
+	return &markers.DefinitionHelp{
+		Category: "RequestParam",
+		DetailedHelp: markers.DetailedHelp{
+			Summary: "Define RequestParam.",
+			Details: "",
+		},
+		FieldHelp: map[string]markers.DetailedHelp{},
+	}
+}
+
+type RequestHeaderMarker struct {
+	markerdefs.Flag `marker:",optional"`
+	Name            string `marker:"name"`
+	Default         string `marker:"default,optional"`
+	Require         bool   `marker:"require,optional"`
+}
+
+func (RequestHeaderMarker) Help() *markers.DefinitionHelp {
+	return &markers.DefinitionHelp{
+		Category: "RequestHeader",
+		DetailedHelp: markers.DetailedHelp{
+			Summary: "Define RequestHeader.",
+			Details: "",
+		},
+		FieldHelp: map[string]markers.DetailedHelp{},
+	}
+}
+
+type RequestBodyMarker struct {
+	markerdefs.Flag `marker:",optional"`
+	Name            string `marker:"name"`
+	Require         bool   `marker:"require,optional"`
+}
+
+func (RequestBodyMarker) Help() *markers.DefinitionHelp {
+	return &markers.DefinitionHelp{
+		Category: "RequestBody",
+		DetailedHelp: markers.DetailedHelp{
+			Summary: "Define RequestBody.",
+			Details: "",
+		},
+		FieldHelp: map[string]markers.DetailedHelp{},
+	}
+}
+
 func init() {
 	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:controller", markers.DescribesType, ControllerMarker{})).
 		WithHelp(ControllerMarker{}.Help()))
 	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:requestmapping", markers.DescribesType, RequestMappingMarker{})).
 		WithHelp(RequestMappingMarker{}.Help()))
+	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:requestparam", markers.DescribesType, RequestParamMarker{})).
+		WithHelp(RequestParamMarker{}.Help()))
+	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:requestheader", markers.DescribesType, RequestHeaderMarker{})).
+		WithHelp(RequestHeaderMarker{}.Help()))
+	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:requestbody", markers.DescribesType, RequestBodyMarker{})).
+		WithHelp(RequestBodyMarker{}.Help()))
+
 }

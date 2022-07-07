@@ -25,6 +25,20 @@ import (
 
 var definitions = map[reflect.Type]*DefinitionWithHelp{}
 
+type Setter interface {
+	IsSet() bool
+	Set(bool)
+}
+
+type Flag bool
+
+func (s *Flag) IsSet() bool {
+	return bool(*s)
+}
+func (s *Flag) Set(v bool) {
+	*s = Flag(v)
+}
+
 func Register(defs ...*DefinitionWithHelp) {
 	for _, d := range defs {
 		definitions[d.Output] = d

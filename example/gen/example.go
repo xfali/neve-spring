@@ -25,9 +25,9 @@ type UserController struct {
 
 // +neve:swagger:apioperation
 // +neve:requestmapping:value="",method="POST"
-// +neve:requestparam:name="projectId",default="-1",require="true"
-// +neve:requestheader:name="client",default="",require="false"
-// +neve:requestbody:name="user",require="false"
+// +neve:requestparam:name="projectId",default="-1",require=true
+// +neve:requestheader:name="client",default="",require=false
+// +neve:requestbody:name="user",require=false
 func (c *UserController) Create(projectId string, clientId string, user entitiy.User) entitiy.Response {
 	// Business codes...
 	return entitiy.Response{}
@@ -35,8 +35,8 @@ func (c *UserController) Create(projectId string, clientId string, user entitiy.
 
 // +neve:swagger:apioperation
 // +neve:requestmapping:value="",method="GET"
-// +neve:requestparam:name="projectId",default="-1",require="true"
-// +neve:requestheader:name="client",default="",require="false"
+// +neve:requestparam:name="projectId",default="-1",require=true
+// +neve:requestheader:name="client",default="",require=false
 func (c *UserController) Get(projectId string) entitiy.Response {
 	// Business codes...
 	return entitiy.Response{Data: []entitiy.User{{}}}

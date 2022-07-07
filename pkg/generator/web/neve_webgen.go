@@ -27,7 +27,10 @@ import (
 )
 
 var (
-	neveWebImports = []string{"github.com/xfali/neve-core"}
+	neveWebImports = []string{
+		"github.com/xfali/xlog",
+		"github.com/gin-gonic/gin",
+	}
 )
 
 type neveGen struct {
