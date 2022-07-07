@@ -92,12 +92,12 @@ func (p *ginPlugin) CouldHandle(t *types.Type) bool {
 	return false
 }
 
-func (p *ginPlugin) parseType(t *types.Type) (*GinMetadata, error) {
+func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinMetadata, error) {
 	method := t.Methods
 	if len(method) == 0 {
 		return nil, fmt.Errorf("Type: %s without method. ", t.Name)
 	}
-
+	imports.AddType(t)
 	ret := &GinMetadata{
 		Name: t.Name.Name,
 	}
@@ -177,7 +177,7 @@ func (p *ginPlugin) Name() string {
 }
 
 func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker, w io.Writer, t *types.Type) (err error) {
-	meta, err := p.parseType(t)
+	meta, err := p.parseType(imports, t)
 	if err != nil {
 		return err
 	}
