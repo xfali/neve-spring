@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022, Xiongfa Li.
+ * Copyright (C) 2022, Xiongfa Li.
  * All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,24 +16,3 @@
  */
 
 package plugin
-
-import (
-	"io"
-	"k8s.io/gengo/generator"
-	"k8s.io/gengo/namer"
-	"k8s.io/gengo/types"
-)
-
-type Plugin interface {
-	Name() string
-	Annotation() string
-	CouldHandle(t *types.Type) bool
-	Generate(ctx *generator.Context, imports namer.ImportTracker, w io.Writer, t *types.Type) (err error)
-}
-
-type Manager interface {
-	FindPlugin(t *types.Type) Plugin
-	RegisterPlugin(plugin Plugin)
-}
-
-type Opt func(Plugin)

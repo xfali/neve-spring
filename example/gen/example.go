@@ -30,14 +30,14 @@ type UserController struct {
 // +neve:requestmapping:value="",method="POST"
 // +neve:requestparam:name="projectId",default="-1",required=true
 // +neve:requestbody:name="user",required=false
-// +neve:requestheader:name="client",default="",required=false
+// +neve:requestheader:name="client",default="1234129040912",required=false
 func (c *UserController) Create(projectId string, client string, user entitiy.User) entitiy.Response {
 	// Business codes...
 	return entitiy.Response{}
 }
 
 // +neve:swagger:apioperation
-// +neve:requestmapping:value="",method="GET"
+// +neve:requestmapping:method="GET"
 // +neve:requestparam:name="projectId",default="-1",required=true
 // +neve:requestparam:name="page",default="0"
 // +neve:requestparam:name="pageSize",default="20"
@@ -51,6 +51,15 @@ func (c *UserController) Get(projectId string, page int64, pageSize int64, order
 // +neve:pathvariable:name="userId",required=true
 // +neve:requestparam:name="projectId",default="-1",required=true
 func (c *UserController) Detail(projectId string, userId int64) entitiy.Response {
+	// Business codes...
+	return entitiy.Response{Data: entitiy.User{}}
+}
+
+// +neve:swagger:apioperation
+// +neve:requestmapping:value="/project/:userId",method="DELETE"
+// +neve:pathvariable:name="userId",required=true
+// +neve:requestparam:name="projectId",default="-1",required=true
+func (c *UserController) Delete(projectId string, userId int64) entitiy.Response {
 	// Business codes...
 	return entitiy.Response{Data: entitiy.User{}}
 }

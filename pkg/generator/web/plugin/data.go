@@ -423,7 +423,7 @@ func SetAutoFillParamFunc(f AutoFillParamFunc) Opt {
 }
 
 type ControllerMarker struct {
-	Value string `marker:"value"`
+	Value string `marker:"value,optional"`
 }
 
 func (ControllerMarker) Help() *markers.DefinitionHelp {
@@ -439,7 +439,7 @@ func (ControllerMarker) Help() *markers.DefinitionHelp {
 
 type RequestMappingMarker struct {
 	markerdefs.Flag `marker:",optional"`
-	Value           string `marker:"value"`
+	Value           string `marker:"value,optional"`
 	Method          string `marker:"method,optional"`
 }
 

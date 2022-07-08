@@ -27,11 +27,11 @@ type pluginManager struct {
 	plugins    []plugin.Plugin
 }
 
-func NewWebPluginManager(annotation string) *pluginManager {
+func NewWebPluginManager(annotation string, opts ...Opt) *pluginManager {
 	ret := &pluginManager{
 		annotation: annotation,
 	}
-	ret.RegisterPlugin(NewGinPlugin(annotation))
+	ret.RegisterPlugin(NewGinPlugin(annotation, opts...))
 	return ret
 }
 
