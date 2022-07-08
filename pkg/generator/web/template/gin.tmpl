@@ -4,7 +4,7 @@
 type Neve{{.Name}}Proxy_ struct {
 	log  xlog.Logger
 	HLog loghttp.HttpLogger `inject:""`
-    {{.Name}} {{.TypeName}} `inject:""`
+    {{.Name}} {{.TypeName}} `inject:"{{.Controller.Value}}"`
 }
 
 func NewNeve{{.Name}}Proxy() * Neve{{.Name}}Proxy_ {

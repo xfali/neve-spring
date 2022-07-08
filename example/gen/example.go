@@ -23,7 +23,7 @@ import (
 )
 
 // +neve:controller:value="users"
-// +neve:requestmapping:value="/user"
+// +neve:requestmapping:value="/users"
 type UserController struct {
 }
 
