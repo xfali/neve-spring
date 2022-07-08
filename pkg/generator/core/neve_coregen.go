@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package web
+package core
 
 import (
 	"fmt"
@@ -28,12 +28,8 @@ import (
 )
 
 var (
-	neveWebImports = []string{
-		"github.com/xfali/xlog",
-		"github.com/gin-gonic/gin",
-		"github.com/xfali/neve-web/gineve/midware/loghttp",
-		"net/http",
-		"fmt",
+	neveImports = []string{
+		"github.com/xfali/neve-core/boot",
 	}
 )
 
@@ -46,7 +42,7 @@ type neveGen struct {
 	pluginMgr  plugin2.Manager
 }
 
-func NewWebGenerator(name, annotation string, pkg *types.Package, manager plugin2.Manager) *neveGen {
+func NewCoreGenerator(name, annotation string, pkg *types.Package, manager plugin2.Manager) *neveGen {
 	ret := &neveGen{
 		name:       name,
 		annotation: annotation,
@@ -137,7 +133,7 @@ func (g *neveGen) GenerateType(ctx *generator.Context, t *types.Type, w io.Write
 // you to keep track of what imports you actually need.
 func (g *neveGen) Imports(ctx *generator.Context) []string {
 	imports := g.imports.ImportLines()
-	imports = append(imports, neveWebImports...)
+	imports = append(imports, neveImports...)
 	return imports
 }
 
@@ -147,7 +143,7 @@ func (g *neveGen) Imports(ctx *generator.Context) []string {
 // TODO: provide per-file import tracking, removing the requirement
 // that generators coordinate..
 func (g *neveGen) Filename() string {
-	return g.name + ".go"
+	return g.name + "_register.go"
 }
 
 // A registered file type in the context to generate this file with. If

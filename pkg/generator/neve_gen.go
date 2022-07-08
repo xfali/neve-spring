@@ -7,6 +7,8 @@ package generator
 
 import (
 	"fmt"
+	"github.com/xfali/neve-spring/pkg/generator/core"
+	plugin2 "github.com/xfali/neve-spring/pkg/generator/core/plugin"
 	"github.com/xfali/neve-spring/pkg/generator/web"
 	"github.com/xfali/neve-spring/pkg/generator/web/plugin"
 	"path/filepath"
@@ -63,7 +65,6 @@ func GenPackages(ctx *generator.Context, args *args.GeneratorArgs) generator.Pac
 	if args.CustomArgs != nil {
 		annotation = args.CustomArgs.(fmt.Stringer).String()
 	}
-	pluginMgr := plugin.NewWebPluginManager(annotation)
 	boilerplate, err := args.LoadGoBoilerplate()
 	if err != nil {
 		klog.Warningf("LoadGoBoilerplate failed: %v. ", err)
@@ -96,7 +97,8 @@ func GenPackages(ctx *generator.Context, args *args.GeneratorArgs) generator.Pac
 			HeaderText:  header,
 			GeneratorFunc: func(context *generator.Context) []generator.Generator {
 				return []generator.Generator{
-					web.NewWebGenerator(args.OutputFileBaseName, annotation, pkg, pluginMgr),
+					core.NewCoreGenerator(args.OutputFileBaseName, annotation, pkg, plugin2.NewCorePluginManager(annotation)),
+					web.NewWebGenerator(args.OutputFileBaseName, annotation, pkg, plugin.NewWebPluginManager(annotation)),
 				}
 			},
 			FilterFunc: func(context *generator.Context, i *types.Type) bool {

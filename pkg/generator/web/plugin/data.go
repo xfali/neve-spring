@@ -256,7 +256,7 @@ func autoFillQuery(imports namer.ImportTracker, name string, param *types.Type) 
 		RequestType: RequestTypeQuery,
 	}
 	ret.Name = name
-	if param.Kind == types.Struct {
+	if param.Kind == types.Struct || param.Kind == types.Interface {
 		imports.AddType(param)
 		ret.TypeName = imports.LocalNameOf(param.Name.Package) + "." + param.Name.Name
 	} else {
@@ -314,7 +314,7 @@ func findParam(imports namer.ImportTracker, t *types.Type, name string) (*TypeMe
 		if v == name {
 			param := t.Signature.Parameters[i]
 			ret.Name = name
-			if param.Kind == types.Struct {
+			if param.Kind == types.Struct || param.Kind == types.Interface {
 				imports.AddType(param)
 				ret.TypeName = imports.LocalNameOf(param.Name.Package) + "." + param.Name.Name
 			} else {
@@ -331,7 +331,7 @@ func findResult(imports namer.ImportTracker, t *types.Type) []*TypeMeta {
 	ret := make([]*TypeMeta, len(t.Signature.Results))
 	for i, v := range t.Signature.Results {
 		meta := &TypeMeta{}
-		if v.Kind == types.Struct {
+		if v.Kind == types.Struct || v.Kind == types.Interface {
 			imports.AddType(v)
 			meta.TypeName = imports.LocalNameOf(v.Name.Package) + "." + v.Name.Name
 		} else {
