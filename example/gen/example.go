@@ -22,7 +22,8 @@ import (
 	"github.com/xfali/neve-spring/example/gen/entitiy"
 )
 
-// +neve:controller:value="/users"
+// +neve:controller:value="users"
+// +neve:requestmapping:value="/user"
 type UserController struct {
 }
 

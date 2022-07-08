@@ -56,9 +56,10 @@ func WriteBuildinTemplate(tmplRoot string, target string) error {
 }
 
 func GetBuildTemplate(name string) string {
-	d, err := base64.StdEncoding.DecodeString(buildinTemplate[name])
-	if err != nil {
-		return ""
-	}
-	return string(d)
+	//d, err := base64.StdEncoding.DecodeString(buildinTemplate[name])
+	//if err != nil {
+	//	return ""
+	//}
+	//return string(d)
+	return ""
 }

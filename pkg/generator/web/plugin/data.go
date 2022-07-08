@@ -25,26 +25,44 @@ import (
 	"k8s.io/gengo/namer"
 	"net/http"
 	"os"
+	"runtime"
 	"sigs.k8s.io/controller-tools/pkg/markers"
 	"strings"
+	"text/template"
 
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/types"
 )
 
+type RequestType string
+
+const (
+	RequestTypeQuery  = "query"
+	RequestTypeHeader = "header"
+	RequestTypeBody   = "body"
+)
+
+type TypeMeta struct {
+	Name        string
+	Type        string
+	Default     string
+	Require     bool
+	RequestType RequestType
+}
+
 type Method struct {
 	Name           string
+	Params         []TypeMeta
+	Return         []TypeMeta
 	RequestMapping RequestMappingMarker
-	RequestParam   RequestParamMarker
-	RequestHeader  RequestHeaderMarker
-	RequestBody    RequestBodyMarker
 }
 
 type GinMetadata struct {
-	Name       string
-	TypeName   string
-	Controller ControllerMarker
-	Methods    []*Method
+	Name           string
+	TypeName       string
+	Controller     ControllerMarker
+	RequestMapping RequestMappingMarker
+	Methods        []*Method
 }
 
 type ginPlugin struct {
@@ -111,11 +129,14 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 		set, err := markerdefs.Parse(c, &ret.Controller)
 		if err != nil {
 			return nil, err
+		} else if set {
+			continue
 		}
-		if !set {
-			return nil, nil
-		} else {
-			break
+		set, err = markerdefs.Parse(c, &ret.RequestMapping)
+		if err != nil {
+			return nil, err
+		} else if set {
+			continue
 		}
 	}
 	for mname, mtype := range t.Methods {
@@ -140,33 +161,48 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 				}
 			}
 
-			if !m.RequestParam.IsSet() {
-				set, err := markerdefs.Parse(c, &m.RequestParam)
-				if err != nil {
-					return nil, err
-				} else if set {
-					m.RequestParam.Set(true)
-					continue
+			paramMarker := RequestParamMarker{}
+			set, err := markerdefs.Parse(c, &paramMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				meta, have := findParam(imports, mtype, paramMarker.Name)
+				if have {
+					meta.Default = paramMarker.Default
+					meta.Require = paramMarker.Require
+					meta.RequestType = RequestTypeQuery
+					m.Params = append(m.Params, meta)
 				}
-			}
-			if !m.RequestHeader.IsSet() {
-				set, err := markerdefs.Parse(c, &m.RequestHeader)
-				if err != nil {
-					return nil, err
-				} else if set {
-					m.RequestHeader.Set(true)
-					continue
-				}
+				continue
 			}
 
-			if !m.RequestBody.IsSet() {
-				set, err := markerdefs.Parse(c, &m.RequestBody)
-				if err != nil {
-					return nil, err
-				} else if set {
-					m.RequestBody.Set(true)
-					continue
+			headerMarker := RequestHeaderMarker{}
+			set, err = markerdefs.Parse(c, &headerMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				meta, have := findParam(imports, mtype, headerMarker.Name)
+				if have {
+					meta.Default = headerMarker.Default
+					meta.Require = headerMarker.Require
+					meta.RequestType = RequestTypeHeader
+					m.Params = append(m.Params, meta)
 				}
+				continue
+			}
+
+			bodyMarker := RequestBodyMarker{}
+			set, err = markerdefs.Parse(c, &bodyMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				meta, have := findParam(imports, mtype, bodyMarker.Name)
+				if have {
+					meta.Require = bodyMarker.Require
+					meta.RequestType = RequestTypeBody
+					m.Params = append(m.Params, meta)
+				}
+				continue
 			}
 		}
 	}
@@ -174,8 +210,37 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 	return ret, nil
 }
 
+func findParam(imports namer.ImportTracker, t *types.Type, name string) (TypeMeta, bool) {
+	ret := TypeMeta{}
+	for i, v := range t.Signature.ParameterNames {
+		if v == name {
+			param := t.Signature.Parameters[i]
+			if param.Kind == types.Struct {
+				imports.AddType(param)
+			}
+			ret.Name = name
+			ret.Type = param.Name.Name
+			return ret, true
+		}
+	}
+	return ret, false
+}
+
 func (p *ginPlugin) Name() string {
 	return "web:gin"
+}
+
+func concatUrl(s1, s2 string) string {
+	if s1 == "" {
+		return s2
+	}
+	if s2 == "" {
+		return s1
+	}
+	if s1[len(s1)-1:] != "/" && s2[:1] != "/" {
+		return s1 + "/" + s2
+	}
+	return s1 + s2
 }
 
 func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker, w io.Writer, t *types.Type) (err error) {
@@ -188,9 +253,25 @@ func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker
 		return nil
 	}
 	w = io.MultiWriter(w, os.Stderr)
-	sw := generator.NewSnippetWriter(w, ctx, delimiterLeft, delimiterRight)
-	sw.Do(p.template, meta)
-	return sw.Error()
+
+	funcMap := template.FuncMap{
+		"concatUrl": concatUrl,
+	}
+	for name, namer := range ctx.Namers {
+		funcMap[name] = namer.Name
+	}
+	_, file, line, _ := runtime.Caller(1)
+	tmpl, err := template.
+		New(fmt.Sprintf("%s:%d", file, line)).
+		Funcs(funcMap).
+		Parse(p.template)
+	if err != nil {
+		return err
+	}
+	return tmpl.Execute(w, meta)
+	//sw := generator.NewSnippetWriter(w, ctx, delimiterLeft, delimiterRight)
+	//sw.Do(p.template, meta)
+	//return sw.Error()
 }
 
 type ControllerMarker struct {
@@ -211,7 +292,7 @@ func (ControllerMarker) Help() *markers.DefinitionHelp {
 type RequestMappingMarker struct {
 	markerdefs.Flag `marker:",optional"`
 	Value           string `marker:"value"`
-	Method          string `marker:"method"`
+	Method          string `marker:"method,optional"`
 }
 
 func (RequestMappingMarker) Help() *markers.DefinitionHelp {
@@ -226,10 +307,9 @@ func (RequestMappingMarker) Help() *markers.DefinitionHelp {
 }
 
 type RequestParamMarker struct {
-	markerdefs.Flag `marker:",optional"`
-	Name            string `marker:"name"`
-	Default         string `marker:"default,optional"`
-	Require         bool   `marker:"require,optional"`
+	Name    string `marker:"name"`
+	Default string `marker:"default,optional"`
+	Require bool   `marker:"require,optional"`
 }
 
 func (RequestParamMarker) Help() *markers.DefinitionHelp {
@@ -244,10 +324,9 @@ func (RequestParamMarker) Help() *markers.DefinitionHelp {
 }
 
 type RequestHeaderMarker struct {
-	markerdefs.Flag `marker:",optional"`
-	Name            string `marker:"name"`
-	Default         string `marker:"default,optional"`
-	Require         bool   `marker:"require,optional"`
+	Name    string `marker:"name"`
+	Default string `marker:"default,optional"`
+	Require bool   `marker:"require,optional"`
 }
 
 func (RequestHeaderMarker) Help() *markers.DefinitionHelp {

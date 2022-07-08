@@ -1,4 +1,5 @@
 {{- $TypeName := .Name -}}
+{{- $RootUrl := .RequestMapping.Value -}}
 
 type Neve{{.Name}}Proxy_ struct {
 	log  xlog.Logger
@@ -15,7 +16,7 @@ func NewNeve{{.Name}}Proxy() * Neve{{.Name}}Proxy_ {
 func (h *Neve{{.Name}}Proxy_) HttpRoutes(engine gin.IRouter) {
 	{{- range .Methods }}
 	{{- if .RequestMapping.Flag }}
-	engine.{{.RequestMapping.Method}}("{{.RequestMapping.Value}}", h._proxy{{.Name}})
+	engine.{{.RequestMapping.Method}}("{{concatUrl $RootUrl .RequestMapping.Value}}", h._proxy{{.Name}})
 	{{- end}}
 	{{- end}}
 }
