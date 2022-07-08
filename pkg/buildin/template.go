@@ -54,7 +54,7 @@ func WriteBuildinTemplate(pkg string, tmplRoot string, target string) error {
 	}
 	buf.WriteString("}\n\n")
 
-	buf.WriteString(`func GetBuildTemplate(name string) string {
+	buf.WriteString(`func getBuildTemplate(name string) string {
 	d, err := base64.StdEncoding.DecodeString(buildinTemplate[name])
 	if err != nil {
 		return ""

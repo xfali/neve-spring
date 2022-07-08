@@ -18,6 +18,7 @@
 package plugin
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/xfali/neve-spring/pkg/generator/markerdefs"
 	"io"
@@ -41,6 +42,13 @@ const (
 	RequestTypeBody   = "body"
 )
 
+var templateMap = map[string]string{
+	http.MethodGet:    "gin_get.tmpl",
+	http.MethodPost:   "gin_post.tmpl",
+	http.MethodDelete: "gin_delete.tmpl",
+	http.MethodPut:    "gin_put.tmpl",
+}
+
 type TypeMeta struct {
 	Name        string
 	TypeName    string
@@ -52,7 +60,7 @@ type TypeMeta struct {
 type Method struct {
 	Name           string
 	Params         []*TypeMeta
-	Return         []*TypeMeta
+	Returns        []*TypeMeta
 	RequestMapping RequestMappingMarker
 }
 
@@ -73,7 +81,7 @@ type ginPlugin struct {
 
 func NewGinPlugin(annotation string) *ginPlugin {
 	return &ginPlugin{
-		template:         GetBuildTemplate("webgin.tmpl"),
+		template:         getBuildTemplate("webgin.tmpl"),
 		annotation:       annotation,
 		structAnnotation: annotation + "controller",
 		methodAnnotation: []string{
@@ -200,7 +208,7 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 				continue
 			}
 		}
-		m.Return = findResult(imports, mtype)
+		m.Returns = findResult(imports, mtype)
 	}
 
 	return ret, nil
@@ -257,6 +265,31 @@ func concatUrl(s1, s2 string) string {
 	return s1 + s2
 }
 
+func add(a, b int) int {
+	return a + b
+}
+
+func generateMethod(method *Method) (string, error) {
+	tmplKey := templateMap[method.RequestMapping.Method]
+	if tmplKey == "" {
+		return "", fmt.Errorf("Method %s not support. ", method.RequestMapping.Method)
+	}
+	buf := &bytes.Buffer{}
+	buf.Grow(1024)
+	_, file, line, _ := runtime.Caller(1)
+	tmpl, err := template.
+		New(fmt.Sprintf("%s:%d", file, line)).
+		Parse(getBuildTemplate(tmplKey))
+	if err != nil {
+		return "", err
+	}
+	err = tmpl.Execute(buf, method)
+	if err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
 func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker, w io.Writer, t *types.Type) (err error) {
 	meta, err := p.parseType(imports, t)
 	if err != nil {
@@ -269,7 +302,9 @@ func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker
 	w = io.MultiWriter(w, os.Stderr)
 
 	funcMap := template.FuncMap{
-		"concatUrl": concatUrl,
+		"concatUrl":      concatUrl,
+		"add":            add,
+		"generateMethod": generateMethod,
 	}
 	for name, namer := range ctx.Namers {
 		funcMap[name] = namer.Name
