@@ -44,7 +44,7 @@ const (
 
 type TypeMeta struct {
 	Name        string
-	Type        string
+	TypeName    string
 	Default     string
 	Require     bool
 	RequestType RequestType
@@ -52,8 +52,8 @@ type TypeMeta struct {
 
 type Method struct {
 	Name           string
-	Params         []TypeMeta
-	Return         []TypeMeta
+	Params         []*TypeMeta
+	Return         []*TypeMeta
 	RequestMapping RequestMappingMarker
 }
 
@@ -205,25 +205,44 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 				continue
 			}
 		}
+		m.Return = findResult(imports, mtype)
 	}
 
 	return ret, nil
 }
 
-func findParam(imports namer.ImportTracker, t *types.Type, name string) (TypeMeta, bool) {
-	ret := TypeMeta{}
+func findParam(imports namer.ImportTracker, t *types.Type, name string) (*TypeMeta, bool) {
+	ret := &TypeMeta{}
 	for i, v := range t.Signature.ParameterNames {
 		if v == name {
 			param := t.Signature.Parameters[i]
+			ret.Name = name
 			if param.Kind == types.Struct {
 				imports.AddType(param)
+				ret.TypeName = imports.LocalNameOf(param.Name.Package) + "." + param.Name.Name
+			} else {
+				ret.TypeName = param.Name.Name
 			}
-			ret.Name = name
-			ret.Type = param.Name.Name
+
 			return ret, true
 		}
 	}
 	return ret, false
+}
+
+func findResult(imports namer.ImportTracker, t *types.Type) []*TypeMeta {
+	ret := make([]*TypeMeta, len(t.Signature.Results))
+	for i, v := range t.Signature.Results {
+		meta := &TypeMeta{}
+		if v.Kind == types.Struct {
+			imports.AddType(v)
+			meta.TypeName = imports.LocalNameOf(v.Name.Package) + "." + v.Name.Name
+		} else {
+			meta.TypeName = v.Name.Name
+		}
+		ret[i] = meta
+	}
+	return ret
 }
 
 func (p *ginPlugin) Name() string {
