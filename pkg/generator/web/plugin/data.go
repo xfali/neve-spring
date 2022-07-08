@@ -78,17 +78,27 @@ type ginPlugin struct {
 	annotation       string
 	structAnnotation string
 	methodAnnotation []string
+	fillFunc         AutoFillParamFunc
 }
 
-func NewGinPlugin(annotation string) *ginPlugin {
-	return &ginPlugin{
+type AutoFillParamFunc func(imports namer.ImportTracker, name string, param *types.Type) (*TypeMeta, error)
+
+type Opt func(*ginPlugin)
+
+func NewGinPlugin(annotation string, opts ...Opt) *ginPlugin {
+	ret := &ginPlugin{
 		template:         getBuildTemplate("webgin.tmpl"),
 		annotation:       annotation,
 		structAnnotation: annotation + "controller",
 		methodAnnotation: []string{
 			annotation + "requestmapping",
 		},
+		fillFunc: autoFillQuery,
 	}
+	for _, opt := range opts {
+		opt(ret)
+	}
+	return ret
 }
 
 func (p *ginPlugin) Annotation() string {
@@ -176,8 +186,10 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 					meta.Required = paramMarker.Required
 					meta.RequestType = RequestTypeQuery
 					m.Params = append(m.Params, meta)
+					continue
+				} else {
+					return nil, fmt.Errorf("Found annotaion: requestparam with name: %s but method not exist ", paramMarker.Name)
 				}
-				continue
 			}
 
 			pathMarker := PathVariableMarker{}
@@ -191,8 +203,10 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 					meta.Required = pathMarker.Required
 					meta.RequestType = RequestTypePath
 					m.Params = append(m.Params, meta)
+					continue
+				} else {
+					return nil, fmt.Errorf("Found annotaion: pathvariable with name: %s but method not exist ", pathMarker.Name)
 				}
-				continue
 			}
 
 			headerMarker := RequestHeaderMarker{}
@@ -206,8 +220,10 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 					meta.Required = headerMarker.Required
 					meta.RequestType = RequestTypeHeader
 					m.Params = append(m.Params, meta)
+					continue
+				} else {
+					return nil, fmt.Errorf("Found annotaion: requestheader with name: %s but method not exist ", headerMarker.Name)
 				}
-				continue
 			}
 
 			bodyMarker := RequestBodyMarker{}
@@ -224,10 +240,72 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 				continue
 			}
 		}
+		err := p.validateParams(imports, mtype, m)
+		if err != nil {
+			return nil, err
+		}
 		m.Returns = findResult(imports, mtype)
 	}
 
 	return ret, nil
+}
+
+func autoFillQuery(imports namer.ImportTracker, name string, param *types.Type) (*TypeMeta, error) {
+	ret := &TypeMeta{
+		Required:    true,
+		RequestType: RequestTypeQuery,
+	}
+	ret.Name = name
+	if param.Kind == types.Struct {
+		imports.AddType(param)
+		ret.TypeName = imports.LocalNameOf(param.Name.Package) + "." + param.Name.Name
+	} else {
+		ret.TypeName = param.Name.Name
+	}
+	return ret, nil
+}
+
+func (p *ginPlugin) validateParams(imports namer.ImportTracker, t *types.Type, method *Method) error {
+	for i, s := range t.Signature.ParameterNames {
+		found := false
+		for _, d := range method.Params {
+			if s == d.Name {
+				found = true
+				break
+			}
+		}
+		if !found {
+			param := t.Signature.Parameters[i]
+			ret, err := p.fillFunc(imports, s, param)
+			if err != nil {
+				return err
+			}
+			method.Params = append(method.Params, ret)
+		}
+	}
+	for _, p := range method.Params {
+		if p.RequestType == RequestTypePath {
+			check := ":" + p.Name
+			if index := strings.Index(method.RequestMapping.Value, check); index == -1 {
+				return fmt.Errorf("Method [%s] RequestMapping missing Path param [%s] add with :%s ",
+					method.Name, p.Name, p.Name)
+			}
+		}
+	}
+	// Sort by method parameters.
+	for i, v := range t.Signature.ParameterNames {
+		for j, m := range method.Params {
+			if v == m.Name {
+				if i != j {
+					// swap.
+					method.Params[j] = method.Params[i]
+					method.Params[i] = m
+				}
+				break
+			}
+		}
+	}
+	return nil
 }
 
 func findParam(imports namer.ImportTracker, t *types.Type, name string) (*TypeMeta, bool) {
@@ -318,9 +396,8 @@ func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker
 	w = io.MultiWriter(w, os.Stderr)
 
 	funcMap := template.FuncMap{
-		"concatUrl":      concatUrl,
-		"add":            add,
-		"generateMethod": generateMethod,
+		"concatUrl": concatUrl,
+		"add":       add,
 	}
 	for name, namer := range ctx.Namers {
 		funcMap[name] = namer.Name
@@ -337,6 +414,12 @@ func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker
 	//sw := generator.NewSnippetWriter(w, ctx, delimiterLeft, delimiterRight)
 	//sw.Do(p.template, meta)
 	//return sw.Error()
+}
+
+func SetAutoFillParamFunc(f AutoFillParamFunc) Opt {
+	return func(plugin *ginPlugin) {
+		plugin.fillFunc = f
+	}
 }
 
 type ControllerMarker struct {
