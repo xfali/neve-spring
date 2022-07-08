@@ -53,7 +53,7 @@ type TypeMeta struct {
 	Name        string
 	TypeName    string
 	Default     string
-	Require     bool
+	Required    bool
 	RequestType RequestType
 }
 
@@ -172,7 +172,7 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 				meta, have := findParam(imports, mtype, paramMarker.Name)
 				if have {
 					meta.Default = paramMarker.Default
-					meta.Require = paramMarker.Require
+					meta.Required = paramMarker.Required
 					meta.RequestType = RequestTypeQuery
 					m.Params = append(m.Params, meta)
 				}
@@ -187,7 +187,7 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 				meta, have := findParam(imports, mtype, headerMarker.Name)
 				if have {
 					meta.Default = headerMarker.Default
-					meta.Require = headerMarker.Require
+					meta.Required = headerMarker.Required
 					meta.RequestType = RequestTypeHeader
 					m.Params = append(m.Params, meta)
 				}
@@ -201,7 +201,7 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 			} else if set {
 				meta, have := findParam(imports, mtype, bodyMarker.Name)
 				if have {
-					meta.Require = bodyMarker.Require
+					meta.Required = bodyMarker.Required
 					meta.RequestType = RequestTypeBody
 					m.Params = append(m.Params, meta)
 				}
@@ -356,9 +356,9 @@ func (RequestMappingMarker) Help() *markers.DefinitionHelp {
 }
 
 type RequestParamMarker struct {
-	Name    string `marker:"name"`
-	Default string `marker:"default,optional"`
-	Require bool   `marker:"require,optional"`
+	Name     string `marker:"name"`
+	Default  string `marker:"default,optional"`
+	Required bool   `marker:"required,optional"`
 }
 
 func (RequestParamMarker) Help() *markers.DefinitionHelp {
@@ -373,9 +373,9 @@ func (RequestParamMarker) Help() *markers.DefinitionHelp {
 }
 
 type RequestHeaderMarker struct {
-	Name    string `marker:"name"`
-	Default string `marker:"default,optional"`
-	Require bool   `marker:"require,optional"`
+	Name     string `marker:"name"`
+	Default  string `marker:"default,optional"`
+	Required bool   `marker:"required,optional"`
 }
 
 func (RequestHeaderMarker) Help() *markers.DefinitionHelp {
@@ -392,7 +392,7 @@ func (RequestHeaderMarker) Help() *markers.DefinitionHelp {
 type RequestBodyMarker struct {
 	markerdefs.Flag `marker:",optional"`
 	Name            string `marker:"name"`
-	Require         bool   `marker:"require,optional"`
+	Required        bool   `marker:"required,optional"`
 }
 
 func (RequestBodyMarker) Help() *markers.DefinitionHelp {

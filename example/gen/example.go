@@ -29,9 +29,9 @@ type UserController struct {
 
 // +neve:swagger:apioperation
 // +neve:requestmapping:value="",method="POST"
-// +neve:requestparam:name="projectId",default="-1",require=true
-// +neve:requestheader:name="client",default="",require=false
-// +neve:requestbody:name="user",require=false
+// +neve:requestparam:name="projectId",default="-1",required=true
+// +neve:requestheader:name="client",default="",required=false
+// +neve:requestbody:name="user",required=false
 func (c *UserController) Create(ctx context.Context, projectId string, client string, user entitiy.User) entitiy.Response {
 	// Business codes...
 	return entitiy.Response{}
@@ -39,10 +39,10 @@ func (c *UserController) Create(ctx context.Context, projectId string, client st
 
 // +neve:swagger:apioperation
 // +neve:requestmapping:value="",method="GET"
-// +neve:requestparam:name="projectId",default="-1",require=true
+// +neve:requestparam:name="projectId",default="-1",required=true
 // +neve:requestparam:name="page",default="0"
 // +neve:requestparam:name="pageSize",default="20"
-// +neve:requestheader:name="client",default="",require=false
+// +neve:requestheader:name="client",default="",required=false
 func (c *UserController) Get(ctx context.Context, projectId string, page int64, pageSize int64) entitiy.Response {
 	// Business codes...
 	return entitiy.Response{Data: []entitiy.User{{}}}
