@@ -37,6 +37,7 @@ import (
 type RequestType string
 
 const (
+	RequestTypePath   = "path"
 	RequestTypeQuery  = "query"
 	RequestTypeHeader = "header"
 	RequestTypeBody   = "body"
@@ -174,6 +175,21 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 					meta.Default = paramMarker.Default
 					meta.Required = paramMarker.Required
 					meta.RequestType = RequestTypeQuery
+					m.Params = append(m.Params, meta)
+				}
+				continue
+			}
+
+			pathMarker := PathVariableMarker{}
+			set, err = markerdefs.Parse(c, &pathMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				meta, have := findParam(imports, mtype, pathMarker.Name)
+				if have {
+					meta.Default = pathMarker.Default
+					meta.Required = pathMarker.Required
+					meta.RequestType = RequestTypePath
 					m.Params = append(m.Params, meta)
 				}
 				continue
@@ -372,6 +388,23 @@ func (RequestParamMarker) Help() *markers.DefinitionHelp {
 	}
 }
 
+type PathVariableMarker struct {
+	Name     string `marker:"name"`
+	Default  string `marker:"default,optional"`
+	Required bool   `marker:"required,optional"`
+}
+
+func (PathVariableMarker) Help() *markers.DefinitionHelp {
+	return &markers.DefinitionHelp{
+		Category: "PathVariable",
+		DetailedHelp: markers.DetailedHelp{
+			Summary: "Define PathVariable.",
+			Details: "",
+		},
+		FieldHelp: map[string]markers.DetailedHelp{},
+	}
+}
+
 type RequestHeaderMarker struct {
 	Name     string `marker:"name"`
 	Default  string `marker:"default,optional"`
@@ -411,6 +444,8 @@ func init() {
 		WithHelp(ControllerMarker{}.Help()))
 	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:requestmapping", markers.DescribesType, RequestMappingMarker{})).
 		WithHelp(RequestMappingMarker{}.Help()))
+	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:pathvariable", markers.DescribesType, PathVariableMarker{})).
+		WithHelp(PathVariableMarker{}.Help()))
 	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:requestparam", markers.DescribesType, RequestParamMarker{})).
 		WithHelp(RequestParamMarker{}.Help()))
 	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:requestheader", markers.DescribesType, RequestHeaderMarker{})).
