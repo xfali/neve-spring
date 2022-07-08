@@ -30,6 +30,7 @@ var (
 	neveWebImports = []string{
 		"github.com/xfali/xlog",
 		"github.com/gin-gonic/gin",
+		"github.com/xfali/neve-web/gineve/midware/loghttp",
 	}
 )
 

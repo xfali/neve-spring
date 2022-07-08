@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"github.com/xfali/neve-spring/pkg/generator/markerdefs"
 	"io"
-	"io/ioutil"
 	"k8s.io/gengo/namer"
 	"net/http"
 	"os"
@@ -73,12 +72,8 @@ type ginPlugin struct {
 }
 
 func NewGinPlugin(annotation string) *ginPlugin {
-	tmpl, err := ioutil.ReadFile("../pkg/generator/web/template/gin.tmpl")
-	if err != nil {
-		panic(err)
-	}
 	return &ginPlugin{
-		template:         string(tmpl),
+		template:         GetBuildTemplate("webgin.tmpl"),
 		annotation:       annotation,
 		structAnnotation: annotation + "controller",
 		methodAnnotation: []string{

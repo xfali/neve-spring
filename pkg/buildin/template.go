@@ -15,7 +15,7 @@ import (
 	"path/filepath"
 )
 
-func WriteBuildinTemplate(tmplRoot string, target string) error {
+func WriteBuildinTemplate(pkg string, tmplRoot string, target string) error {
 	err := utils.Mkdir(filepath.Dir(target))
 	if err != nil {
 		return err
@@ -33,7 +33,9 @@ func WriteBuildinTemplate(tmplRoot string, target string) error {
 
 	buf := bytes.Buffer{}
 	buf.Grow(4 * 1024 * 1024)
-	buf.WriteString("package buildin\n\n")
+	buf.WriteString(fmt.Sprintf("package %s\n\n", pkg))
+	buf.WriteString(`import "encoding/base64"` + "\n\n")
+
 	buf.WriteString("var buildinTemplate = map[string]string{}\n\nfunc init() {\n")
 	for _, fi := range fis {
 		// Skip dir
@@ -50,16 +52,16 @@ func WriteBuildinTemplate(tmplRoot string, target string) error {
 		buf.WriteString(base64.StdEncoding.EncodeToString(content))
 		buf.WriteString("`\n")
 	}
-	buf.WriteString("}\n")
+	buf.WriteString("}\n\n")
 
+	buf.WriteString(`func GetBuildTemplate(name string) string {
+	d, err := base64.StdEncoding.DecodeString(buildinTemplate[name])
+	if err != nil {
+		return ""
+	}
+	return string(d)
+}`)
 	return ioutil.WriteFile(target, buf.Bytes(), os.ModePerm)
 }
 
-func GetBuildTemplate(name string) string {
-	//d, err := base64.StdEncoding.DecodeString(buildinTemplate[name])
-	//if err != nil {
-	//	return ""
-	//}
-	//return string(d)
-	return ""
-}
+
