@@ -27,4 +27,8 @@ func TestUpdateGinTemplate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	err = buildin.WriteBuildinTemplate("plugin", "../pkg/generator/core/template", "../pkg/generator/core/plugin/core_tpl.go")
+	if err != nil {
+		t.Fatal(err)
+	}
 }

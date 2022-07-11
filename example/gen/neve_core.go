@@ -26,7 +26,7 @@ import (
 type UserService struct {
 }
 
-type userHandler struct {
+type UserHandler struct {
 }
 
 type Auth interface {
@@ -42,13 +42,13 @@ func (a *AuthImpl) Verify(user entitiy.User) error {
 	return errors.New("Failed. ")
 }
 
-// +neve:component:value="userHandler"
-func NewUserHandler() *userHandler {
-	return &userHandler{}
+// +neve:bean:value="userHandler"
+func NewUserHandler() *UserHandler {
+	return &UserHandler{}
 }
 
 // +neve:bean
-func (s *UserService) GetAuth() Auth {
+func (s *UserService) GetAuth(h *UserHandler) Auth {
 	v := AuthImpl("test")
 	return &v
 }

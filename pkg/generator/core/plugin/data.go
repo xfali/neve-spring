@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"strings"
 	"text/template"
 
 	"k8s.io/gengo/generator"
@@ -68,6 +69,7 @@ type CoreMetadata struct {
 	ControllerMarker *ControllerMarker
 	ServiceMarker    *ServiceMarker
 	ComponentMarker  *ComponentMarker
+	BeanMarker       *BeanMarker
 	Methods          []*Method
 }
 
@@ -83,7 +85,7 @@ type Opt func(*corePlugin)
 
 func NewCorePlugin(annotation string, opts ...Opt) *corePlugin {
 	ret := &corePlugin{
-		template:   "", //getBuildTemplate("coregin.tmpl"),
+		template:   getBuildTemplate("core.tmpl"),
 		annotation: annotation,
 	}
 	for _, opt := range opts {
@@ -113,8 +115,7 @@ func (p *corePlugin) CouldHandle(t *types.Type) bool {
 
 func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*CoreMetadata, error) {
 	ret := &CoreMetadata{
-		Name:     t.Name.Name,
-		TypeName: imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name,
+		Name: t.Name.Name,
 	}
 	comments := MergeComments(t)
 	beanFound := false
@@ -130,6 +131,7 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 			beanFound = true
 			imports.AddType(t)
 			ret.ControllerMarker = &controllerMarker
+			ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
 			break
 		}
 
@@ -141,6 +143,7 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 			beanFound = true
 			imports.AddType(t)
 			ret.ServiceMarker = &serviceMarker
+			ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
 			break
 		}
 
@@ -152,6 +155,18 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 			beanFound = true
 			imports.AddType(t)
 			ret.ComponentMarker = &componentMarker
+			ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
+			break
+		}
+		beanMarker := BeanMarker{}
+		set, err = markerdefs.Parse(c, &beanMarker)
+		if err != nil {
+			return nil, err
+		} else if set {
+			beanFound = true
+			imports.AddType(t)
+			ret.BeanMarker = &beanMarker
+			ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
 			break
 		}
 	}
@@ -172,6 +187,7 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 			if err != nil {
 				return nil, err
 			} else if set {
+				m.BeanMarker = &beanMarker
 				ret.Methods = append(ret.Methods, m)
 				continue
 			}
@@ -180,25 +196,6 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 	}
 
 	return ret, nil
-}
-
-func findParam(imports namer.ImportTracker, t *types.Type, name string) (*TypeMeta, bool) {
-	ret := &TypeMeta{}
-	for i, v := range t.Signature.ParameterNames {
-		if v == name {
-			param := t.Signature.Parameters[i]
-			ret.Name = name
-			if param.Kind == types.Struct || param.Kind == types.Interface {
-				imports.AddType(param)
-				ret.TypeName = imports.LocalNameOf(param.Name.Package) + "." + param.Name.Name
-			} else {
-				ret.TypeName = param.Name.Name
-			}
-
-			return ret, true
-		}
-	}
-	return ret, false
 }
 
 func findResult(imports namer.ImportTracker, t *types.Type) []*TypeMeta {
@@ -217,11 +214,19 @@ func findResult(imports namer.ImportTracker, t *types.Type) []*TypeMeta {
 }
 
 func (p *corePlugin) Name() string {
-	return "web:gin"
+	return "core"
 }
 
 func add(a, b int) int {
 	return a + b
+}
+
+func concat(strs ...string) string {
+	buf := strings.Builder{}
+	for _, s := range strs {
+		buf.WriteString(s)
+	}
+	return buf.String()
 }
 
 func (p *corePlugin) Generate(ctx *generator.Context, imports namer.ImportTracker, w io.Writer, t *types.Type) (err error) {
@@ -236,7 +241,8 @@ func (p *corePlugin) Generate(ctx *generator.Context, imports namer.ImportTracke
 	w = io.MultiWriter(w, os.Stderr)
 
 	funcMap := template.FuncMap{
-		"add": add,
+		"add":    add,
+		"concat": concat,
 	}
 	for name, namer := range ctx.Namers {
 		funcMap[name] = namer.Name

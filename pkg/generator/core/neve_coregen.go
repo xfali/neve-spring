@@ -88,13 +88,15 @@ func (g *neveGen) Namers(ctx *generator.Context) namer.NameSystems {
 // initialization! Do that when your Package constructs the
 // Generators.)
 func (g *neveGen) Init(ctx *generator.Context, w io.Writer) error {
-	return nil
+	_, err := w.Write([]byte(`func init() {`))
+	return err
 }
 
 // Finalize should write finish up functions, and any other content that's not
 // generated per-type.
 func (g *neveGen) Finalize(ctx *generator.Context, w io.Writer) error {
-	return nil
+	_, err := w.Write([]byte(`}`))
+	return err
 }
 
 // PackageVars should emit an array of variable lines. They will be
