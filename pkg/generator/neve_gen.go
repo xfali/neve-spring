@@ -7,6 +7,7 @@ package generator
 
 import (
 	"fmt"
+	"github.com/xfali/neve-spring/cmd/neve-spring/customargs"
 	"github.com/xfali/neve-spring/pkg/generator/core"
 	plugin2 "github.com/xfali/neve-spring/pkg/generator/core/plugin"
 	"github.com/xfali/neve-spring/pkg/generator/web"
@@ -63,7 +64,8 @@ func GenPackages(ctx *generator.Context, args *args.GeneratorArgs) generator.Pac
 	pkgs := generator.Packages{}
 	annotation := defaultAnnotation
 	if args.CustomArgs != nil {
-		annotation = args.CustomArgs.(fmt.Stringer).String()
+		neveArgs := args.CustomArgs.(*customargs.NeveArgs)
+		annotation = neveArgs.Annotation
 	}
 	boilerplate, err := args.LoadGoBoilerplate()
 	if err != nil {

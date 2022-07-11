@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/gin-gonic/gin v1.6.3 // indirect
+	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xfali/neve-core v0.2.6 // indirect
 	github.com/xfali/neve-web v0.0.9 // indirect
 	github.com/xfali/reflection v0.0.0-20220705135531-464ba3201671 // indirect
