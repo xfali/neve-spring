@@ -26,27 +26,29 @@ import (
 type UserController struct {
 }
 
-// +neve:swagger:apioperation
+// +neve:swagger:apioperation:value="create user"
 // +neve:requestmapping:value="",method="POST"
 // +neve:requestparam:name="projectId",default="-1",required=true
 // +neve:requestbody:name="user",required=false
 // +neve:requestheader:name="client",default="1234129040912",required=false
+// +neve:loghttp
 func (c *UserController) Create(projectId string, client string, user entitiy.User) entitiy.Response {
 	// Business codes...
 	return entitiy.Response{}
 }
 
-// +neve:swagger:apioperation
+// +neve:swagger:apioperation:value="get user list"
 // +neve:requestmapping:method="GET"
 // +neve:requestparam:name="projectId",default="-1",required=true
 // +neve:requestparam:name="page",default="0"
 // +neve:requestparam:name="pageSize",default="20"
+// +neve:loghttp
 func (c *UserController) Get(projectId string, page int64, pageSize int64, orderby string) entitiy.Response {
 	// Business codes...
 	return entitiy.Response{Data: []entitiy.User{{}}}
 }
 
-// +neve:swagger:apioperation
+// +neve:swagger:apioperation:value="get user detail"
 // +neve:requestmapping:value="/:userId",method="GET"
 // +neve:pathvariable:name="userId",required=true
 // +neve:requestparam:name="projectId",default="-1",required=true
@@ -55,7 +57,7 @@ func (c *UserController) Detail(projectId string, userId int64) entitiy.Response
 	return entitiy.Response{Data: entitiy.User{}}
 }
 
-// +neve:swagger:apioperation
+// +neve:swagger:apioperation:value="delete user by id"
 // +neve:requestmapping:value="/project/:userId",method="DELETE"
 // +neve:pathvariable:name="userId",required=true
 // +neve:requestparam:name="projectId",default="-1",required=true

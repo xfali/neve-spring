@@ -26,7 +26,6 @@ import (
 	"k8s.io/gengo/namer"
 	"net/http"
 	"runtime"
-	"sigs.k8s.io/controller-tools/pkg/markers"
 	"strings"
 	"text/template"
 
@@ -59,10 +58,12 @@ type TypeMeta struct {
 }
 
 type Method struct {
-	Name           string
-	Params         []*TypeMeta
-	Returns        []*TypeMeta
-	RequestMapping RequestMappingMarker
+	Name               string
+	Params             []*TypeMeta
+	Returns            []*TypeMeta
+	RequestMapping     RequestMappingMarker
+	LogHttpMarker      *LogHttpMarker
+	ApiOperationMarker *ApiOperationMarker
 }
 
 type GinMetadata struct {
@@ -70,6 +71,7 @@ type GinMetadata struct {
 	TypeName       string
 	Controller     ControllerMarker
 	RequestMapping RequestMappingMarker
+	LogHttpMarker  *LogHttpMarker
 	Methods        []*Method
 }
 
@@ -155,6 +157,15 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 		if err != nil {
 			return nil, err
 		} else if set {
+			continue
+		}
+
+		logHttp := &LogHttpMarker{}
+		set, err = markerdefs.Parse(c, logHttp)
+		if err != nil {
+			return nil, err
+		} else if set {
+			ret.LogHttpMarker = logHttp
 			continue
 		}
 	}
@@ -247,6 +258,30 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 				}
 				continue
 			}
+
+			logHttp := &LogHttpMarker{}
+			set, err = markerdefs.Parse(c, logHttp)
+			if err != nil {
+				return nil, err
+			} else if set {
+				m.LogHttpMarker = logHttp
+				continue
+			}
+
+			apiOptMarker := &ApiOperationMarker{}
+			set, err = markerdefs.Parse(c, apiOptMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				if apiOptMarker.Notes == "" {
+					apiOptMarker.Notes = apiOptMarker.Value
+				}
+				m.ApiOperationMarker = apiOptMarker
+				continue
+			}
+		}
+		if m.LogHttpMarker == nil && ret.LogHttpMarker != nil {
+			m.LogHttpMarker = ret.LogHttpMarker
 		}
 		err := p.validateParams(imports, mtype, m)
 		if err != nil {
@@ -371,6 +406,31 @@ func add(a, b int) int {
 	return a + b
 }
 
+func swaggerRouter(s string) string {
+	buf := bytes.NewBuffer(nil)
+	buf.Grow(len(s))
+	for {
+		i := strings.Index(s, "/:")
+		if i == -1 {
+			buf.WriteString(s)
+			return buf.String()
+		} else {
+			buf.WriteString(s[:i+1])
+			// find next node
+			n := strings.Index(s[i+2:], "/")
+			if n == -1 {
+				buf.WriteString(fmt.Sprintf("{%s}", s[i+2:]))
+				return buf.String()
+			} else {
+				n += i + 2
+				buf.WriteString(fmt.Sprintf("{%s}", s[i+2:n]))
+				s = s[n:]
+				continue
+			}
+		}
+	}
+}
+
 func generateMethod(method *Method) (string, error) {
 	tmplKey := templateMap[method.RequestMapping.Method]
 	if tmplKey == "" {
@@ -404,8 +464,10 @@ func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker
 	//w = io.MultiWriter(w, os.Stderr)
 
 	funcMap := template.FuncMap{
-		"concatUrl": concatUrl,
-		"add":       add,
+		"concatUrl":     concatUrl,
+		"add":           add,
+		"swaggerRouter": swaggerRouter,
+		"toLower":       strings.ToLower,
 	}
 	for name, namer := range ctx.Namers {
 		funcMap[name] = namer.Name
@@ -440,120 +502,4 @@ func SetAutoFillParamFunc(f AutoFillParamFunc) Opt {
 	return func(plugin *ginPlugin) {
 		plugin.fillFunc = f
 	}
-}
-
-type ControllerMarker struct {
-	Value string `marker:"value,optional"`
-}
-
-func (ControllerMarker) Help() *markers.DefinitionHelp {
-	return &markers.DefinitionHelp{
-		Category: "Controller",
-		DetailedHelp: markers.DetailedHelp{
-			Summary: "Enable type controller function.",
-			Details: "",
-		},
-		FieldHelp: map[string]markers.DetailedHelp{},
-	}
-}
-
-type RequestMappingMarker struct {
-	markerdefs.Flag `marker:",optional"`
-	Value           string `marker:"value,optional"`
-	Method          string `marker:"method,optional"`
-}
-
-func (RequestMappingMarker) Help() *markers.DefinitionHelp {
-	return &markers.DefinitionHelp{
-		Category: "RequestMapping",
-		DetailedHelp: markers.DetailedHelp{
-			Summary: "Define the controller request router path and method.",
-			Details: "",
-		},
-		FieldHelp: map[string]markers.DetailedHelp{},
-	}
-}
-
-type RequestParamMarker struct {
-	Name     string `marker:"name"`
-	Default  string `marker:"default,optional"`
-	Required bool   `marker:"required,optional"`
-}
-
-func (RequestParamMarker) Help() *markers.DefinitionHelp {
-	return &markers.DefinitionHelp{
-		Category: "RequestParam",
-		DetailedHelp: markers.DetailedHelp{
-			Summary: "Define RequestParam.",
-			Details: "",
-		},
-		FieldHelp: map[string]markers.DetailedHelp{},
-	}
-}
-
-type PathVariableMarker struct {
-	Name     string `marker:"name"`
-	Default  string `marker:"default,optional"`
-	Required bool   `marker:"required,optional"`
-}
-
-func (PathVariableMarker) Help() *markers.DefinitionHelp {
-	return &markers.DefinitionHelp{
-		Category: "PathVariable",
-		DetailedHelp: markers.DetailedHelp{
-			Summary: "Define PathVariable.",
-			Details: "",
-		},
-		FieldHelp: map[string]markers.DetailedHelp{},
-	}
-}
-
-type RequestHeaderMarker struct {
-	Name     string `marker:"name"`
-	Default  string `marker:"default,optional"`
-	Required bool   `marker:"required,optional"`
-}
-
-func (RequestHeaderMarker) Help() *markers.DefinitionHelp {
-	return &markers.DefinitionHelp{
-		Category: "RequestHeader",
-		DetailedHelp: markers.DetailedHelp{
-			Summary: "Define RequestHeader.",
-			Details: "",
-		},
-		FieldHelp: map[string]markers.DetailedHelp{},
-	}
-}
-
-type RequestBodyMarker struct {
-	markerdefs.Flag `marker:",optional"`
-	Name            string `marker:"name"`
-	Required        bool   `marker:"required,optional"`
-}
-
-func (RequestBodyMarker) Help() *markers.DefinitionHelp {
-	return &markers.DefinitionHelp{
-		Category: "RequestBody",
-		DetailedHelp: markers.DetailedHelp{
-			Summary: "Define RequestBody.",
-			Details: "",
-		},
-		FieldHelp: map[string]markers.DetailedHelp{},
-	}
-}
-
-func init() {
-	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:controller", markers.DescribesType, ControllerMarker{})).
-		WithHelp(ControllerMarker{}.Help()))
-	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:requestmapping", markers.DescribesType, RequestMappingMarker{})).
-		WithHelp(RequestMappingMarker{}.Help()))
-	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:pathvariable", markers.DescribesType, PathVariableMarker{})).
-		WithHelp(PathVariableMarker{}.Help()))
-	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:requestparam", markers.DescribesType, RequestParamMarker{})).
-		WithHelp(RequestParamMarker{}.Help()))
-	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:requestheader", markers.DescribesType, RequestHeaderMarker{})).
-		WithHelp(RequestHeaderMarker{}.Help()))
-	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:requestbody", markers.DescribesType, RequestBodyMarker{})).
-		WithHelp(RequestBodyMarker{}.Help()))
-
 }
