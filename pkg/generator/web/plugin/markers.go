@@ -125,11 +125,28 @@ func (RequestBodyMarker) Help() *markers.DefinitionHelp {
 }
 
 type LogHttpMarker struct {
-	RequestHeader  bool `marker:"requestheader,optional"`
-	RequestBody    bool `marker:"requestbody,optional"`
-	ResponseHeader bool `marker:"responseheader,optional"`
-	ResponseBody   bool `marker:"responsebody,optional"`
-	Level          int  `marker:"level,optional"`
+	NoRequestHeader  bool   `marker:"norequestheader,optional"`
+	NoRequestBody    bool   `marker:"norequestbody,optional"`
+	NoResponseHeader bool   `marker:"noresponseheader,optional"`
+	NoResponseBody   bool   `marker:"noresponsebody,optional"`
+	Level            string `marker:"level,optional"` // debug | info | warn
+}
+
+func NewLogHttpMarker() *LogHttpMarker {
+	return &LogHttpMarker{
+		NoRequestHeader:  false,
+		NoRequestBody:    false,
+		NoResponseHeader: false,
+		NoResponseBody:   false,
+		Level:            "info",
+	}
+}
+
+func (m *LogHttpMarker) Fill() *LogHttpMarker {
+	if m.Level == "" {
+		m.Level = "info"
+	}
+	return m
 }
 
 func (LogHttpMarker) Help() *markers.DefinitionHelp {

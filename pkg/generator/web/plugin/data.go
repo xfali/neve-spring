@@ -160,12 +160,12 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 			continue
 		}
 
-		logHttp := &LogHttpMarker{}
+		logHttp := NewLogHttpMarker()
 		set, err = markerdefs.Parse(c, logHttp)
 		if err != nil {
 			return nil, err
 		} else if set {
-			ret.LogHttpMarker = logHttp
+			ret.LogHttpMarker = logHttp.Fill()
 			continue
 		}
 	}
@@ -259,12 +259,12 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 				continue
 			}
 
-			logHttp := &LogHttpMarker{}
+			logHttp := NewLogHttpMarker()
 			set, err = markerdefs.Parse(c, logHttp)
 			if err != nil {
 				return nil, err
 			} else if set {
-				m.LogHttpMarker = logHttp
+				m.LogHttpMarker = logHttp.Fill()
 				continue
 			}
 
@@ -406,6 +406,28 @@ func add(a, b int) int {
 	return a + b
 }
 
+func configLogHttp(log *LogHttpMarker) string {
+	if log.NoRequestBody || log.NoRequestHeader || log.NoResponseHeader || log.NoResponseBody || log.Level != "info" {
+		buf := strings.Builder{}
+		buf.WriteString(fmt.Sprintf(`loghttp.OptLogLevel("%s")`, log.Level))
+		if log.NoRequestHeader {
+			buf.WriteString(", loghttp.DisableLogReqHeader()")
+		}
+		if log.NoRequestBody {
+			buf.WriteString(", loghttp.DisableLogReqBody()")
+		}
+		if log.NoResponseHeader {
+			buf.WriteString(", loghttp.DisableLogRespHeader()")
+		}
+		if log.NoResponseBody {
+			buf.WriteString(", loghttp.DisableLogRespBody()")
+		}
+		return fmt.Sprintf("h.HLog.OptLogHttp(%s)", buf.String())
+	} else {
+		return "h.HLog.LogHttp()"
+	}
+}
+
 func swaggerRouter(s string) string {
 	buf := bytes.NewBuffer(nil)
 	buf.Grow(len(s))
@@ -466,8 +488,9 @@ func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker
 	funcMap := template.FuncMap{
 		"concatUrl":     concatUrl,
 		"add":           add,
-		"swaggerRouter": swaggerRouter,
 		"toLower":       strings.ToLower,
+		"swaggerRouter": swaggerRouter,
+		"configLogHttp": configLogHttp,
 	}
 	for name, namer := range ctx.Namers {
 		funcMap[name] = namer.Name

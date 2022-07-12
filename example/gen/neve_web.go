@@ -42,7 +42,7 @@ func (c *UserController) Create(projectId string, client string, user entitiy.Us
 // +neve:requestparam:name="projectId",default="-1",required=true
 // +neve:requestparam:name="page",default="0"
 // +neve:requestparam:name="pageSize",default="20"
-// +neve:loghttp
+// +neve:loghttp:noresponsebody=true
 func (c *UserController) Get(projectId string, page int64, pageSize int64, orderby string) entitiy.Response {
 	// Business codes...
 	return entitiy.Response{Data: []entitiy.User{{}}}
