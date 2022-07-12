@@ -30,6 +30,7 @@ import (
 var (
 	neveImports = []string{
 		"github.com/xfali/neve-core/boot",
+		"github.com/xfali/neve-core/bean",
 		"github.com/xfali/neve-utils/neverror",
 	}
 )

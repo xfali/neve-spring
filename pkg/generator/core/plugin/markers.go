@@ -68,7 +68,9 @@ func (ServiceMarker) Help() *markers.DefinitionHelp {
 }
 
 type BeanMarker struct {
-	Value string `marker:"value,optional"`
+	Value         string `marker:"value,optional"`
+	InitMethod    string `marker:"initmethod,optional"`
+	DestroyMethod string `marker:"destroymethod,optional"`
 }
 
 func (BeanMarker) Help() *markers.DefinitionHelp {

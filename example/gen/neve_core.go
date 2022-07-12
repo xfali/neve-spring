@@ -42,13 +42,20 @@ func (a *AuthImpl) Verify(user entitiy.User) error {
 	return errors.New("Failed. ")
 }
 
-// +neve:bean:value="userHandler"
+// +neve:bean:value="userHandler",destroymethod="Purge"
 func NewUserHandler() *UserHandler {
 	return &UserHandler{}
 }
 
-// +neve:bean
+func (h *UserHandler) Purge() {
+}
+
+// +neve:bean:initmethod="Init"
 func (s *UserService) GetAuth(h *UserHandler) Auth {
 	v := AuthImpl("test")
 	return &v
+}
+
+func (s *UserService) Init() error {
+	return nil
 }
