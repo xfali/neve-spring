@@ -24,7 +24,6 @@ import (
 	"io"
 	"k8s.io/gengo/namer"
 	"net/http"
-	"os"
 	"runtime"
 	"sigs.k8s.io/controller-tools/pkg/markers"
 	"strings"
@@ -79,6 +78,8 @@ type ginPlugin struct {
 	structAnnotation string
 	methodAnnotation []string
 	fillFunc         AutoFillParamFunc
+
+	metas []*GinMetadata
 }
 
 type AutoFillParamFunc func(imports namer.ImportTracker, name string, param *types.Type) (*TypeMeta, error)
@@ -393,7 +394,7 @@ func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker
 		// not set
 		return nil
 	}
-	w = io.MultiWriter(w, os.Stderr)
+	//w = io.MultiWriter(w, os.Stderr)
 
 	funcMap := template.FuncMap{
 		"concatUrl": concatUrl,
@@ -410,10 +411,22 @@ func (p *ginPlugin) Generate(ctx *generator.Context, imports namer.ImportTracker
 	if err != nil {
 		return err
 	}
+	p.metas = append(p.metas, meta)
 	return tmpl.Execute(w, meta)
 	//sw := generator.NewSnippetWriter(w, ctx, delimiterLeft, delimiterRight)
 	//sw.Do(p.template, meta)
 	//return sw.Error()
+}
+
+func (p *ginPlugin) Finalize(ctx *generator.Context, imports namer.ImportTracker, w io.Writer) error {
+	_, file, line, _ := runtime.Caller(1)
+	tmpl, err := template.
+		New(fmt.Sprintf("%s:%d", file, line)).
+		Parse(getBuildTemplate("webgin_register.tmpl"))
+	if err != nil {
+		return err
+	}
+	return tmpl.Execute(w, p.metas)
 }
 
 func SetAutoFillParamFunc(f AutoFillParamFunc) Opt {

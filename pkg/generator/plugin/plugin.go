@@ -29,6 +29,10 @@ type Plugin interface {
 	Annotation() string
 	CouldHandle(t *types.Type) bool
 	Generate(ctx *generator.Context, imports namer.ImportTracker, w io.Writer, t *types.Type) (err error)
+
+	// Finalize should write finish up functions, and any other content that's not
+	// generated per-type.
+	Finalize(ctx *generator.Context, imports namer.ImportTracker, w io.Writer) error
 }
 
 type Manager interface {

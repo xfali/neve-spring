@@ -59,6 +59,7 @@ func (arg *cArgs) String() string {
 
 func TestWebGen(t *testing.T) {
 	g := args.Default().WithoutDefaultFlagParsing()
+	g.GoHeaderFilePath = "../hack/boilerplate.txt"
 	g.OutputBase = "."
 	g.OutputFileBaseName = "zz_generated"
 	b, err := NewBuilder(g)

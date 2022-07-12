@@ -23,7 +23,6 @@ import (
 	"io"
 	"k8s.io/gengo/namer"
 	"net/http"
-	"os"
 	"runtime"
 	"strings"
 	"text/template"
@@ -238,7 +237,7 @@ func (p *corePlugin) Generate(ctx *generator.Context, imports namer.ImportTracke
 		// not set
 		return nil
 	}
-	w = io.MultiWriter(w, os.Stderr)
+	//w = io.MultiWriter(w, os.Stderr)
 
 	funcMap := template.FuncMap{
 		"add":    add,
@@ -259,6 +258,10 @@ func (p *corePlugin) Generate(ctx *generator.Context, imports namer.ImportTracke
 	//sw := generator.NewSnippetWriter(w, ctx, delimiterLeft, delimiterRight)
 	//sw.Do(p.template, meta)
 	//return sw.Error()
+}
+
+func (p *corePlugin) Finalize(ctx *generator.Context, imports namer.ImportTracker, w io.Writer) error {
+	return nil
 }
 
 func SetAutoFillParamFunc(f AutoFillParamFunc) Opt {

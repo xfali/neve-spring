@@ -32,6 +32,8 @@ var (
 		"github.com/xfali/xlog",
 		"github.com/gin-gonic/gin",
 		"github.com/xfali/neve-web/gineve/midware/loghttp",
+		"github.com/xfali/neve-core/boot",
+		"github.com/xfali/neve-utils/neverror",
 		"net/http",
 		"fmt",
 	}
@@ -44,6 +46,7 @@ type neveGen struct {
 	pkg        *types.Package
 	imports    namer.ImportTracker
 	pluginMgr  plugin2.Manager
+	plugins    []plugin2.Plugin
 }
 
 func NewWebGenerator(name, annotation string, pkg *types.Package, manager plugin2.Manager) *neveGen {
@@ -92,12 +95,19 @@ func (g *neveGen) Namers(ctx *generator.Context) namer.NameSystems {
 // initialization! Do that when your Package constructs the
 // Generators.)
 func (g *neveGen) Init(ctx *generator.Context, w io.Writer) error {
+	g.plugins = nil
 	return nil
 }
 
 // Finalize should write finish up functions, and any other content that's not
 // generated per-type.
 func (g *neveGen) Finalize(ctx *generator.Context, w io.Writer) error {
+	for _, p := range g.plugins {
+		err := p.Finalize(ctx, g.imports, w)
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -126,6 +136,7 @@ func (g *neveGen) GenerateType(ctx *generator.Context, t *types.Type, w io.Write
 	if err != nil {
 		err = fmt.Errorf("Generate by plugin: %s failed, pkg: %s type %s, err: %v. ", p.Name(), g.pkg.Path, t.Name, err)
 	}
+	g.plugins = append(g.plugins, p)
 	return err
 }
 
@@ -147,7 +158,7 @@ func (g *neveGen) Imports(ctx *generator.Context) []string {
 // TODO: provide per-file import tracking, removing the requirement
 // that generators coordinate..
 func (g *neveGen) Filename() string {
-	return g.name + ".go"
+	return g.name + "_gin.go"
 }
 
 // A registered file type in the context to generate this file with. If
