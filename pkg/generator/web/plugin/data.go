@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/xfali/neve-spring/pkg/generator/markerdefs"
+	"github.com/xfali/neve-spring/pkg/stringfunc"
 	"io"
 	"k8s.io/gengo/namer"
 	"net/http"
@@ -129,7 +130,7 @@ func (p *ginPlugin) CouldHandle(t *types.Type) bool {
 func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinMetadata, error) {
 	method := t.Methods
 	if len(method) == 0 {
-		return nil, fmt.Errorf("Type: %s without method. ", t.Name)
+		return nil, fmt.Errorf("Type: %s without method ", t.Name)
 	}
 	imports.AddType(t)
 	ret := &GinMetadata{
@@ -145,6 +146,9 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 		if err != nil {
 			return nil, err
 		} else if set {
+			if !stringfunc.IsFirstUpper(t.Name.Name) {
+				return nil, fmt.Errorf("Type %s is private ", t.Name)
+			}
 			continue
 		}
 		set, err = markerdefs.Parse(c, &ret.RequestMapping)
@@ -167,6 +171,9 @@ func (p *ginPlugin) parseType(imports namer.ImportTracker, t *types.Type) (*GinM
 				if err != nil {
 					return nil, err
 				} else if set {
+					if !stringfunc.IsFirstUpper(mname) {
+						return nil, fmt.Errorf("Method %s.%s is private ", t.Name, mname)
+					}
 					m.RequestMapping.Set(true)
 					if m.RequestMapping.Method == "" {
 						m.RequestMapping.Method = http.MethodGet

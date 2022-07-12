@@ -28,3 +28,20 @@ func FirstUpper(src string) string {
 	b.WriteString(src[1:])
 	return b.String()
 }
+
+func IsFirstUpper(str string) bool {
+	return strIn(str[:1], 'A', 'Z')
+}
+
+func IsFirstLower(str string) bool {
+	return strIn(str[:1], 'a', 'z')
+}
+
+func strIn(s string, start, end byte) bool {
+	for i := range s {
+		if !(start <= s[i] && s[i] <= end) {
+			return false
+		}
+	}
+	return true
+}

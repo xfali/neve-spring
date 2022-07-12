@@ -20,6 +20,7 @@ package plugin
 import (
 	"fmt"
 	"github.com/xfali/neve-spring/pkg/generator/markerdefs"
+	"github.com/xfali/neve-spring/pkg/stringfunc"
 	"io"
 	"k8s.io/gengo/namer"
 	"net/http"
@@ -127,6 +128,9 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 		if err != nil {
 			return nil, err
 		} else if set {
+			if !stringfunc.IsFirstUpper(t.Name.Name) {
+				return nil, fmt.Errorf("Type %s is private. ", t.Name)
+			}
 			beanFound = true
 			imports.AddType(t)
 			ret.ControllerMarker = &controllerMarker
@@ -139,6 +143,9 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 		if err != nil {
 			return nil, err
 		} else if set {
+			if !stringfunc.IsFirstUpper(t.Name.Name) {
+				return nil, fmt.Errorf("Type %s is private ", t.Name)
+			}
 			beanFound = true
 			imports.AddType(t)
 			ret.ServiceMarker = &serviceMarker
@@ -151,6 +158,9 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 		if err != nil {
 			return nil, err
 		} else if set {
+			if !stringfunc.IsFirstUpper(t.Name.Name) {
+				return nil, fmt.Errorf("Type %s is private ", t.Name)
+			}
 			beanFound = true
 			imports.AddType(t)
 			ret.ComponentMarker = &componentMarker
@@ -162,6 +172,9 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 		if err != nil {
 			return nil, err
 		} else if set {
+			if !stringfunc.IsFirstUpper(t.Name.Name) {
+				return nil, fmt.Errorf("Function %s is private ", t.Name)
+			}
 			beanFound = true
 			imports.AddType(t)
 			ret.BeanMarker = &beanMarker
@@ -186,6 +199,9 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 			if err != nil {
 				return nil, err
 			} else if set {
+				if !stringfunc.IsFirstUpper(mname) {
+					return nil, fmt.Errorf("Method %s.%s is private ", t.Name, mname)
+				}
 				m.BeanMarker = &beanMarker
 				ret.Methods = append(ret.Methods, m)
 				continue
