@@ -40,6 +40,10 @@ const (
 	RequestTypeBody   = "body"
 )
 
+const(
+	ScopeTypePrototype = "prototype"
+)
+
 var templateMap = map[string]string{
 	http.MethodGet:    "gin_get.tmpl",
 	http.MethodPost:   "gin_post.tmpl",
@@ -56,10 +60,11 @@ type TypeMeta struct {
 }
 
 type Method struct {
-	Name       string
-	BeanMarker *BeanMarker
-	Params     []*TypeMeta
-	Returns    []*TypeMeta
+	Name        string
+	BeanMarker  *BeanMarker
+	ScopeMarker *ScopeMarker
+	Params      []*TypeMeta
+	Returns     []*TypeMeta
 }
 
 type CoreMetadata struct {
@@ -69,6 +74,7 @@ type CoreMetadata struct {
 	ServiceMarker    *ServiceMarker
 	ComponentMarker  *ComponentMarker
 	BeanMarker       *BeanMarker
+	ScopeMarker      *ScopeMarker
 	Methods          []*Method
 }
 
@@ -122,63 +128,75 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 		if c == "" {
 			continue
 		}
-		controllerMarker := ControllerMarker{}
-		set, err := markerdefs.Parse(c, &controllerMarker)
+		scopeMarker := ScopeMarker{}
+		set, err := markerdefs.Parse(c, &scopeMarker)
 		if err != nil {
 			return nil, err
 		} else if set {
-			if !stringfunc.IsFirstUpper(t.Name.Name) {
-				return nil, fmt.Errorf("Type %s is private. ", t.Name)
-			}
-			beanFound = true
-			imports.AddType(t)
-			ret.ControllerMarker = &controllerMarker
-			ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
-			break
+			ret.ScopeMarker = &scopeMarker
+			continue
 		}
 
-		serviceMarker := ServiceMarker{}
-		set, err = markerdefs.Parse(c, &serviceMarker)
-		if err != nil {
-			return nil, err
-		} else if set {
-			if !stringfunc.IsFirstUpper(t.Name.Name) {
-				return nil, fmt.Errorf("Type %s is private ", t.Name)
+		if !beanFound {
+			controllerMarker := ControllerMarker{}
+			set, err = markerdefs.Parse(c, &controllerMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				if !stringfunc.IsFirstUpper(t.Name.Name) {
+					return nil, fmt.Errorf("Type %s is private. ", t.Name)
+				}
+				beanFound = true
+				imports.AddType(t)
+				ret.ControllerMarker = &controllerMarker
+				ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
+				continue
 			}
-			beanFound = true
-			imports.AddType(t)
-			ret.ServiceMarker = &serviceMarker
-			ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
-			break
-		}
 
-		componentMarker := ComponentMarker{}
-		set, err = markerdefs.Parse(c, &componentMarker)
-		if err != nil {
-			return nil, err
-		} else if set {
-			if !stringfunc.IsFirstUpper(t.Name.Name) {
-				return nil, fmt.Errorf("Type %s is private ", t.Name)
+			serviceMarker := ServiceMarker{}
+			set, err = markerdefs.Parse(c, &serviceMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				if !stringfunc.IsFirstUpper(t.Name.Name) {
+					return nil, fmt.Errorf("Type %s is private ", t.Name)
+				}
+				beanFound = true
+				imports.AddType(t)
+				ret.ServiceMarker = &serviceMarker
+				ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
+				continue
 			}
-			beanFound = true
-			imports.AddType(t)
-			ret.ComponentMarker = &componentMarker
-			ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
-			break
-		}
-		beanMarker := BeanMarker{}
-		set, err = markerdefs.Parse(c, &beanMarker)
-		if err != nil {
-			return nil, err
-		} else if set {
-			if !stringfunc.IsFirstUpper(t.Name.Name) {
-				return nil, fmt.Errorf("Function %s is private ", t.Name)
+
+			componentMarker := ComponentMarker{}
+			set, err = markerdefs.Parse(c, &componentMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				if !stringfunc.IsFirstUpper(t.Name.Name) {
+					return nil, fmt.Errorf("Type %s is private ", t.Name)
+				}
+				beanFound = true
+				imports.AddType(t)
+				ret.ComponentMarker = &componentMarker
+				ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
+				continue
 			}
-			beanFound = true
-			imports.AddType(t)
-			ret.BeanMarker = &beanMarker
-			ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
-			break
+
+			beanMarker := BeanMarker{}
+			set, err = markerdefs.Parse(c, &beanMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				if !stringfunc.IsFirstUpper(t.Name.Name) {
+					return nil, fmt.Errorf("Function %s is private ", t.Name)
+				}
+				beanFound = true
+				imports.AddType(t)
+				ret.BeanMarker = &beanMarker
+				ret.TypeName = imports.LocalNameOf(t.Name.Package) + "." + t.Name.Name
+				continue
+			}
 		}
 	}
 	if !beanFound {
@@ -193,11 +211,26 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 				continue
 			}
 
-			beanMarker := BeanMarker{}
-			set, err := markerdefs.Parse(c, &beanMarker)
+			scopeMarker := ScopeMarker{}
+			set, err := markerdefs.Parse(c, &scopeMarker)
 			if err != nil {
 				return nil, err
 			} else if set {
+				if ret.ScopeMarker != nil && ret.ScopeMarker.Value == ScopeTypePrototype {
+					return nil, fmt.Errorf("Type %s is prototype, cannot with [scope] annotation ", t.Name)
+				}
+				m.ScopeMarker = &scopeMarker
+				continue
+			}
+
+			beanMarker := BeanMarker{}
+			set, err = markerdefs.Parse(c, &beanMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				if ret.ScopeMarker != nil && ret.ScopeMarker.Value == ScopeTypePrototype {
+					return nil, fmt.Errorf("Type %s is prototype, cannot with [bean] annotation ", t.Name)
+				}
 				if !stringfunc.IsFirstUpper(mname) {
 					return nil, fmt.Errorf("Method %s.%s is private ", t.Name, mname)
 				}
@@ -243,6 +276,10 @@ func concat(strs ...string) string {
 	return buf.String()
 }
 
+func prototype(scope *ScopeMarker) bool {
+	return scope != nil && scope.Value == ScopeTypePrototype
+}
+
 func (p *corePlugin) Generate(ctx *generator.Context, imports namer.ImportTracker, w io.Writer, t *types.Type) (err error) {
 	meta, err := p.parseType(imports, t)
 	if err != nil {
@@ -255,8 +292,9 @@ func (p *corePlugin) Generate(ctx *generator.Context, imports namer.ImportTracke
 	//w = io.MultiWriter(w, os.Stderr)
 
 	funcMap := template.FuncMap{
-		"add":    add,
-		"concat": concat,
+		"add":       add,
+		"concat":    concat,
+		"prototype": prototype,
 	}
 	for name, namer := range ctx.Namers {
 		funcMap[name] = namer.Name

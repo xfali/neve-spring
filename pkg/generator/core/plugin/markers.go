@@ -83,6 +83,22 @@ func (BeanMarker) Help() *markers.DefinitionHelp {
 	}
 }
 
+type ScopeMarker struct {
+	// singleton | prototype
+	Value string `marker:"value,optional"`
+}
+
+func (ScopeMarker) Help() *markers.DefinitionHelp {
+	return &markers.DefinitionHelp{
+		Category: "Scope",
+		DetailedHelp: markers.DetailedHelp{
+			Summary: "Define Scope.",
+			Details: "",
+		},
+		FieldHelp: map[string]markers.DetailedHelp{},
+	}
+}
+
 func init() {
 	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:controller", markers.DescribesType, ControllerMarker{})).
 		WithHelp(ControllerMarker{}.Help()))
@@ -92,4 +108,6 @@ func init() {
 		WithHelp(ServiceMarker{}.Help()))
 	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:bean", markers.DescribesType, BeanMarker{})).
 		WithHelp(BeanMarker{}.Help()))
+	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:scope", markers.DescribesType, ScopeMarker{})).
+		WithHelp(ScopeMarker{}.Help()))
 }

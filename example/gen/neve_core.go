@@ -49,6 +49,7 @@ func NewUserHandler() *UserHandler {
 func (h *UserHandler) Purge() {
 }
 
+// +neve:scope:value=prototype
 // +neve:bean:initmethod="Init"
 func (s *UserService) GetAuth(h *UserHandler) Auth {
 	v := AuthImpl("test")
