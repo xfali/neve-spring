@@ -19,7 +19,7 @@ package main
 import (
 	"flag"
 	"github.com/spf13/pflag"
-	"github.com/xfali/neve-spring/cmd/neve-spring/customargs"
+	"github.com/xfali/neve-spring/cmd/neve-spring-gen/customargs"
 	"github.com/xfali/neve-spring/pkg/generator"
 	"k8s.io/klog/v2"
 )
