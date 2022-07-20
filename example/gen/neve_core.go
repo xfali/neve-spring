@@ -23,6 +23,8 @@ import (
 
 // +neve:service
 type UserService struct {
+	// +neve:autowired:name="userHandler",required=false
+	UserHandler *UserHandler
 }
 
 type UserHandler struct {

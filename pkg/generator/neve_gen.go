@@ -115,6 +115,7 @@ func GenPackages(ctx *generator.Context, args *args.GeneratorArgs) generator.Pac
 			GeneratorFunc: func(context *generator.Context) []generator.Generator {
 				return []generator.Generator{
 					core.NewCoreGenerator(args.OutputFileBaseName, annotation, pkg, plugin2.NewCorePluginManager(annotation)),
+					//core.NewWiredGenerator(args.OutputFileBaseName, annotation, pkg),
 					web.NewWebGenerator(args.OutputFileBaseName, annotation, pkg, plugin.NewWebPluginManager(annotation)),
 				}
 			},

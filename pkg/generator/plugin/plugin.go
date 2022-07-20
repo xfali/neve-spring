@@ -35,7 +35,7 @@ type Plugin interface {
 }
 
 type Manager interface {
-	FindPlugin(t *types.Type) Plugin
+	FindPlugin(t *types.Type) []Plugin
 	RegisterPlugin(plugin Plugin)
 }
 

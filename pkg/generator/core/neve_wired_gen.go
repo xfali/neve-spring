@@ -14,55 +14,42 @@
  * limitations under the License.
  */
 
-package web
+package core
 
 import (
 	"fmt"
+	"github.com/xfali/neve-spring/pkg/generator/core/plugin"
 	plugin2 "github.com/xfali/neve-spring/pkg/generator/plugin"
 	"io"
 	"k8s.io/gengo/generator"
 	"k8s.io/gengo/namer"
 	"k8s.io/gengo/types"
-	"k8s.io/klog/v2"
 )
 
-var (
-	neveWebImports = []string{
-		"github.com/xfali/xlog",
-		"github.com/gin-gonic/gin",
-		"github.com/xfali/neve-web/gineve/midware/loghttp",
-		"github.com/xfali/neve-core/boot",
-		"github.com/xfali/neve-utils/neverror",
-		"net/http",
-		"fmt",
-	}
-)
-
-type neveGen struct {
+type wiredGen struct {
 	name       string
 	annotation string
 	targetPkg  string
 	pkg        *types.Package
 	imports    namer.ImportTracker
-	pluginMgr  plugin2.Manager
-	plugins    []plugin2.Plugin
+	plugin     plugin2.Plugin
 }
 
-func NewWebGenerator(name, annotation string, pkg *types.Package, manager plugin2.Manager) *neveGen {
-	ret := &neveGen{
+func NewWiredGenerator(name, annotation string, pkg *types.Package) *wiredGen {
+	ret := &wiredGen{
 		name:       name,
 		annotation: annotation,
 		pkg:        pkg,
 		targetPkg:  pkg.Path,
 		imports:    generator.NewImportTracker(),
-		pluginMgr:  manager,
+		plugin:     plugin.NewCorePlugin(annotation, plugin.SetTemplate("wired.tmpl")),
 	}
 
 	return ret
 }
 
 // The name of this generator. Will be included in generated comments.
-func (g *neveGen) Name() string {
+func (g *wiredGen) Name() string {
 	return g.name
 }
 
@@ -72,7 +59,7 @@ func (g *neveGen) Name() string {
 // Filter is called before any of the generator's other functions;
 // subsequent calls will get a context with only the types that passed
 // this filter.
-func (g *neveGen) Filter(ctx *generator.Context, t *types.Type) bool {
+func (g *wiredGen) Filter(ctx *generator.Context, t *types.Type) bool {
 	return true
 }
 
@@ -83,7 +70,7 @@ func (g *neveGen) Filter(ctx *generator.Context, t *types.Type) bool {
 // functions.
 //
 // A use case for this is to return a namer that tracks imports.
-func (g *neveGen) Namers(ctx *generator.Context) namer.NameSystems {
+func (g *wiredGen) Namers(ctx *generator.Context) namer.NameSystems {
 	return namer.NameSystems{
 		"raw": namer.NewRawNamer(g.targetPkg, g.imports),
 	}
@@ -93,49 +80,35 @@ func (g *neveGen) Namers(ctx *generator.Context) namer.NameSystems {
 // generated per-type. (It's not intended for generator specific
 // initialization! Do that when your Package constructs the
 // Generators.)
-func (g *neveGen) Init(ctx *generator.Context, w io.Writer) error {
-	g.plugins = nil
+func (g *wiredGen) Init(ctx *generator.Context, w io.Writer) error {
 	return nil
 }
 
 // Finalize should write finish up functions, and any other content that's not
 // generated per-type.
-func (g *neveGen) Finalize(ctx *generator.Context, w io.Writer) error {
-	for _, p := range g.plugins {
-		err := p.Finalize(ctx, g.imports, w)
-		if err != nil {
-			return err
-		}
-	}
+func (g *wiredGen) Finalize(ctx *generator.Context, w io.Writer) error {
 	return nil
 }
 
 // PackageVars should emit an array of variable lines. They will be
 // placed in a var ( ... ) block. There's no need to include a leading
 // \t or trailing \n.
-func (g *neveGen) PackageVars(ctx *generator.Context) []string {
+func (g *wiredGen) PackageVars(ctx *generator.Context) []string {
 	return nil
 }
 
 // PackageConsts should emit an array of constant lines. They will be
 // placed in a const ( ... ) block. There's no need to include a leading
 // \t or trailing \n.
-func (g *neveGen) PackageConsts(ctx *generator.Context) []string {
+func (g *wiredGen) PackageConsts(ctx *generator.Context) []string {
 	return nil
 }
 
 // GenerateType should emit the code for a particular type.
-func (g *neveGen) GenerateType(ctx *generator.Context, t *types.Type, w io.Writer) error {
-	ps := g.pluginMgr.FindPlugin(t)
-	if ps == nil {
-		klog.V(4).Infof("Cannot handle type: %s. ", t.String())
-		return nil
-	}
-	for _, p := range ps {
-		err := p.Generate(ctx, g.imports, w, t)
-		if err != nil {
-			err = fmt.Errorf("Generate by plugin: %s failed, pkg: %s type %s, err: %v. ", p.Name(), g.pkg.Path, t.Name, err)
-		}
+func (g *wiredGen) GenerateType(ctx *generator.Context, t *types.Type, w io.Writer) error {
+	err := g.plugin.Generate(ctx, g.imports, w, t)
+	if err != nil {
+		err = fmt.Errorf("Generate by plugin: %s failed, pkg: %s type %s, err: %v. ", g.plugin.Name(), g.pkg.Path, t.Name, err)
 	}
 	return nil
 }
@@ -146,9 +119,9 @@ func (g *neveGen) GenerateType(ctx *generator.Context, t *types.Type, w io.Write
 // imports in the format `name "path/to/pkg"`. Imports will be called
 // after Init, PackageVars, PackageConsts, and GenerateType, to allow
 // you to keep track of what imports you actually need.
-func (g *neveGen) Imports(ctx *generator.Context) []string {
+func (g *wiredGen) Imports(ctx *generator.Context) []string {
 	imports := g.imports.ImportLines()
-	imports = append(imports, neveWebImports...)
+	imports = append(imports, neveImports...)
 	return imports
 }
 
@@ -157,12 +130,12 @@ func (g *neveGen) Imports(ctx *generator.Context) []string {
 // up to you to make sure they don't have colliding import names.
 // TODO: provide per-file import tracking, removing the requirement
 // that generators coordinate..
-func (g *neveGen) Filename() string {
-	return g.name + "_gin.go"
+func (g *wiredGen) Filename() string {
+	return g.name + "_wired.go"
 }
 
 // A registered file type in the context to generate this file with. If
 // the FileType is not found in the context, execution will stop.
-func (g *neveGen) FileType() string {
+func (g *wiredGen) FileType() string {
 	return generator.GolangFileType
 }

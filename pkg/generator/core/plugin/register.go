@@ -34,14 +34,15 @@ func NewCorePluginManager(annotation string, opts ...Opt) *pluginManager {
 	return ret
 }
 
-func (m *pluginManager) FindPlugin(t *types.Type) plugin.Plugin {
+func (m *pluginManager) FindPlugin(t *types.Type) []plugin.Plugin {
+	var ret []plugin.Plugin
 	for i := len(m.plugins) - 1; i >= 0; i-- {
 		v := m.plugins[i]
 		if v.CouldHandle(t) {
-			return v
+			ret = append(ret, v)
 		}
 	}
-	return nil
+	return ret
 }
 
 func (m *pluginManager) RegisterPlugin(plugin plugin.Plugin) {

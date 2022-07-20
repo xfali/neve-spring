@@ -40,7 +40,7 @@ const (
 	RequestTypeBody   = "body"
 )
 
-const(
+const (
 	ScopeTypePrototype = "prototype"
 )
 
@@ -60,11 +60,17 @@ type TypeMeta struct {
 }
 
 type Method struct {
-	Name        string
-	BeanMarker  *BeanMarker
-	ScopeMarker *ScopeMarker
-	Params      []*TypeMeta
-	Returns     []*TypeMeta
+	Name            string
+	BeanMarker      *BeanMarker
+	ScopeMarker     *ScopeMarker
+	AutowiredMarker *AutowiredMarker
+	Params          []*TypeMeta
+	Returns         []*TypeMeta
+}
+
+type Field struct {
+	TypeMeta
+	AutowiredMarker *AutowiredMarker
 }
 
 type CoreMetadata struct {
@@ -75,6 +81,7 @@ type CoreMetadata struct {
 	ComponentMarker  *ComponentMarker
 	BeanMarker       *BeanMarker
 	ScopeMarker      *ScopeMarker
+	Fields           []*Field
 	Methods          []*Method
 }
 
@@ -144,7 +151,7 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 				return nil, err
 			} else if set {
 				if !stringfunc.IsFirstUpper(t.Name.Name) {
-					return nil, fmt.Errorf("Type %s is private. ", t.Name)
+					return nil, fmt.Errorf("Type %s is private ", t.Name)
 				}
 				beanFound = true
 				imports.AddType(t)
@@ -202,6 +209,45 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 	if !beanFound {
 		return nil, nil
 	}
+
+	for _, member := range t.Members {
+		m := &Field{}
+		mname, mtype := member.Name, member.Type
+		m.Name = mname
+		for _, c := range member.CommentLines {
+			if c == "" {
+				continue
+			}
+
+			autowiredMarker := AutowiredMarker{}
+			set, err := markerdefs.Parse(c, &autowiredMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				//if ret.ScopeMarker != nil && ret.ScopeMarker.Value == ScopeTypePrototype {
+				//	return nil, fmt.Errorf("Type %s is prototype, field cannot with [autowired] annotation ", t.Name)
+				//}
+				if !stringfunc.IsFirstUpper(mname) {
+					return nil, fmt.Errorf("Type %s field %s is private ", t.Name, mname)
+				}
+				m.AutowiredMarker = &autowiredMarker
+				tname := ""
+				if mtype.Kind == types.Pointer {
+					mtype = mtype.Elem
+					tname = "*"
+				}
+				if mtype.Kind == types.Struct || mtype.Kind == types.Interface {
+					imports.AddType(mtype)
+					m.TypeName = tname + imports.LocalNameOf(mtype.Name.Package) + "." + mtype.Name.Name
+				} else {
+					m.TypeName = tname + mtype.Name.Name
+				}
+
+				ret.Fields = append(ret.Fields, m)
+				continue
+			}
+		}
+	}
 	for mname, mtype := range t.Methods {
 		m := &Method{}
 		m.Name = mname
@@ -217,11 +263,23 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 				return nil, err
 			} else if set {
 				if ret.ScopeMarker != nil && ret.ScopeMarker.Value == ScopeTypePrototype {
-					return nil, fmt.Errorf("Type %s is prototype, cannot with [scope] annotation ", t.Name)
+					return nil, fmt.Errorf("Type %s is prototype, method cannot with [scope] annotation ", t.Name)
 				}
 				m.ScopeMarker = &scopeMarker
 				continue
 			}
+
+			//autowiredMarker := AutowiredMarker{}
+			//set, err = markerdefs.Parse(c, &autowiredMarker)
+			//if err != nil {
+			//	return nil, err
+			//} else if set {
+			//	if ret.ScopeMarker != nil && ret.ScopeMarker.Value == ScopeTypePrototype {
+			//		return nil, fmt.Errorf("Type %s is prototype, method cannot with [autowired] annotation ", t.Name)
+			//	}
+			//	m.AutowiredMarker = &autowiredMarker
+			//	continue
+			//}
 
 			beanMarker := BeanMarker{}
 			set, err = markerdefs.Parse(c, &beanMarker)
@@ -229,7 +287,7 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 				return nil, err
 			} else if set {
 				if ret.ScopeMarker != nil && ret.ScopeMarker.Value == ScopeTypePrototype {
-					return nil, fmt.Errorf("Type %s is prototype, cannot with [bean] annotation ", t.Name)
+					return nil, fmt.Errorf("Type %s is prototype, method cannot with [bean] annotation ", t.Name)
 				}
 				if !stringfunc.IsFirstUpper(mname) {
 					return nil, fmt.Errorf("Method %s.%s is private ", t.Name, mname)
@@ -280,6 +338,44 @@ func prototype(scope *ScopeMarker) bool {
 	return scope != nil && scope.Value == ScopeTypePrototype
 }
 
+func haveAutowired(core *CoreMetadata) bool {
+	if len(core.Fields) != 0 {
+		return true
+	}
+	for _, m := range core.Methods {
+		if m.AutowiredMarker != nil {
+			return true
+		}
+	}
+	return false
+}
+
+func haveBean(core *CoreMetadata) bool {
+	if core.ComponentMarker != nil {
+		return true
+	}
+	if core.ServiceMarker != nil {
+		return true
+	}
+	if core.ControllerMarker != nil {
+		return true
+	}
+	return false
+}
+
+func valueOrName(core *CoreMetadata) string {
+	if core.ComponentMarker != nil {
+		return core.ComponentMarker.Value
+	}
+	if core.ServiceMarker != nil {
+		return core.ServiceMarker.Value
+	}
+	if core.ControllerMarker != nil {
+		return core.ControllerMarker.Value
+	}
+	return ""
+}
+
 func (p *corePlugin) Generate(ctx *generator.Context, imports namer.ImportTracker, w io.Writer, t *types.Type) (err error) {
 	meta, err := p.parseType(imports, t)
 	if err != nil {
@@ -292,9 +388,13 @@ func (p *corePlugin) Generate(ctx *generator.Context, imports namer.ImportTracke
 	//w = io.MultiWriter(w, os.Stderr)
 
 	funcMap := template.FuncMap{
-		"add":       add,
-		"concat":    concat,
-		"prototype": prototype,
+		"add":             add,
+		"concat":          concat,
+		"prototype":       prototype,
+		"firstLower":      stringfunc.FirstLower,
+		"haveAutowired":   haveAutowired,
+		"haveBean":        haveBean,
+		"beanValueOrName": valueOrName,
 	}
 	for name, namer := range ctx.Namers {
 		funcMap[name] = namer.Name
@@ -320,5 +420,10 @@ func (p *corePlugin) Finalize(ctx *generator.Context, imports namer.ImportTracke
 func SetAutoFillParamFunc(f AutoFillParamFunc) Opt {
 	return func(plugin *corePlugin) {
 		plugin.fillFunc = f
+	}
+}
+func SetTemplate(tmpl string) Opt {
+	return func(plugin *corePlugin) {
+		plugin.template = getBuildTemplate(tmpl)
 	}
 }

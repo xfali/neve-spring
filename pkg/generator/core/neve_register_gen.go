@@ -30,6 +30,7 @@ var (
 	neveImports = []string{
 		"github.com/xfali/neve-core/boot",
 		"github.com/xfali/neve-core/bean",
+		"github.com/xfali/neve-core/injector",
 		"github.com/xfali/neve-utils/neverror",
 	}
 )
@@ -116,16 +117,18 @@ func (g *neveGen) PackageConsts(ctx *generator.Context) []string {
 
 // GenerateType should emit the code for a particular type.
 func (g *neveGen) GenerateType(ctx *generator.Context, t *types.Type, w io.Writer) error {
-	p := g.pluginMgr.FindPlugin(t)
-	if p == nil {
+	ps := g.pluginMgr.FindPlugin(t)
+	if ps == nil {
 		klog.V(4).Infof("Cannot handle type: %s. ", t.String())
 		return nil
 	}
-	err := p.Generate(ctx, g.imports, w, t)
-	if err != nil {
-		err = fmt.Errorf("Generate by plugin: %s failed, pkg: %s type %s, err: %v. ", p.Name(), g.pkg.Path, t.Name, err)
+	for _, p := range ps {
+		err := p.Generate(ctx, g.imports, w, t)
+		if err != nil {
+			return fmt.Errorf("Generate by plugin: %s failed, pkg: %s type %s, err: %v. ", p.Name(), g.pkg.Path, t.Name, err)
+		}
 	}
-	return err
+	return nil
 }
 
 // Imports should return a list of necessary imports. They will be

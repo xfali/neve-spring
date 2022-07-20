@@ -451,6 +451,8 @@ github.com/xfali/neve-core v0.2.6 h1:b0k7OEDR6ccGbtMW73fdnxx82emJj37DR/2A1OkFrTQ
 github.com/xfali/neve-core v0.2.6/go.mod h1:30gv1fz1+Wy7HU6ZbzlPPyeFlew6kkStLgEVll5DdM0=
 github.com/xfali/neve-core v0.2.7 h1:LRqlkHZ5f463F5Sa/M7d1DJL3eQ4TJitPRtZl5mSY9U=
 github.com/xfali/neve-core v0.2.7/go.mod h1:30gv1fz1+Wy7HU6ZbzlPPyeFlew6kkStLgEVll5DdM0=
+github.com/xfali/neve-core v0.2.8 h1:k+lYsAh9IOfJiHpOrweqbiXsui615ZGaGvxpxVtCs4I=
+github.com/xfali/neve-core v0.2.8/go.mod h1:30gv1fz1+Wy7HU6ZbzlPPyeFlew6kkStLgEVll5DdM0=
 github.com/xfali/neve-utils v0.0.1 h1:S+NfOFYeqILzCylAvd9OI00JqXW1meNPScb9JIDZBaQ=
 github.com/xfali/neve-utils v0.0.1/go.mod h1:qwnnleG/95zSAnGPi0zWk+eeeP0bUUckkqFKa3YWvMU=
 github.com/xfali/neve-web v0.0.9 h1:wN/ajKFbH7E21EvpQ0bHAIO+fFEJ9eGQHvOgJBaoj7I=
