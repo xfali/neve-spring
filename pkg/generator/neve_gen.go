@@ -22,6 +22,7 @@ import (
 	"github.com/xfali/neve-spring/cmd/neve-spring-gen/customargs"
 	"github.com/xfali/neve-spring/pkg/generator/core"
 	plugin2 "github.com/xfali/neve-spring/pkg/generator/core/plugin"
+	"github.com/xfali/neve-spring/pkg/generator/restclient"
 	"github.com/xfali/neve-spring/pkg/generator/web"
 	"github.com/xfali/neve-spring/pkg/generator/web/plugin"
 	"path/filepath"
@@ -116,6 +117,7 @@ func GenPackages(ctx *generator.Context, args *args.GeneratorArgs) generator.Pac
 				return []generator.Generator{
 					core.NewCoreGenerator(args.OutputFileBaseName, annotation, pkg, plugin2.NewCorePluginManager(annotation)),
 					//core.NewWiredGenerator(args.OutputFileBaseName, annotation, pkg),
+					rest.NewGenerator(args.OutputFileBaseName, annotation, pkg),
 					web.NewWebGenerator(args.OutputFileBaseName, annotation, pkg, plugin.NewWebPluginManager(annotation)),
 				}
 			},

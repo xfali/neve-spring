@@ -134,7 +134,7 @@ func (g *neveGen) GenerateType(ctx *generator.Context, t *types.Type, w io.Write
 	for _, p := range ps {
 		err := p.Generate(ctx, g.imports, w, t)
 		if err != nil {
-			err = fmt.Errorf("Generate by plugin: %s failed, pkg: %s type %s, err: %v. ", p.Name(), g.pkg.Path, t.Name, err)
+			return fmt.Errorf("Generate by plugin: %s failed, pkg: %s type %s, err: %v. ", p.Name(), g.pkg.Path, t.Name, err)
 		}
 		g.plugins = append(g.plugins, p)
 	}
