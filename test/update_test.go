@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-func TestUpdateGinTemplate(t *testing.T) {
+func TestUpdateAllTemplate(t *testing.T) {
 	err := buildin.WriteBuildinTemplate("plugin", "../pkg/generator/web/template", "../pkg/generator/web/plugin/gin_tpl.go")
 	if err != nil {
 		t.Fatal(err)
@@ -31,6 +31,17 @@ func TestUpdateGinTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = buildin.WriteBuildinTemplate("plugin", "../pkg/generator/restclient/template", "../pkg/generator/restclient/plugin/restclient_tpl.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = buildin.WriteBuildinTemplate("project", "../cmd/neve-spring-gen/commands/project/template", "../cmd/neve-spring-gen/commands/project/project_tpl.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestUpdateProjectTemplate(t *testing.T) {
+	err := buildin.WriteBuildinTemplate("project", "../cmd/neve-spring-gen/commands/project/template", "../cmd/neve-spring-gen/commands/project/project_tpl.go")
 	if err != nil {
 		t.Fatal(err)
 	}
