@@ -44,7 +44,7 @@ var cmd = cobra.Command{
 	Short: "Generate project init code and files",
 	Long:  "Generate project init code and files",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := generate(config.Output, "go.mod", "mod.tpl")
+		err := generate(config.Output, "go.mod", "mod.tmpl")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, err.Error())
 			os.Exit(1)
@@ -53,7 +53,7 @@ var cmd = cobra.Command{
 		if config.MainOutPut == "" {
 			config.MainOutPut = filepath.Join(config.Output, "cmd", filepath.Dir(config.Module))
 		}
-		err = generate(config.MainOutPut, "main.go", "main.tpl")
+		err = generate(config.MainOutPut, "main.go", "main.tmpl")
 		if err != nil {
 			fmt.Fprintf(os.Stderr, err.Error())
 			os.Exit(1)
