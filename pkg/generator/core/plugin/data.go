@@ -307,9 +307,10 @@ func findResult(imports namer.ImportTracker, t *types.Type) []*TypeMeta {
 	ret := make([]*TypeMeta, len(t.Signature.Results))
 	for i, v := range t.Signature.Results {
 		meta := &TypeMeta{}
-		if v.Kind == types.Struct || v.Kind == types.Interface {
+		pkg := imports.LocalNameOf(v.Name.Package)
+		if pkg != "" {
 			imports.AddType(v)
-			meta.TypeName = imports.LocalNameOf(v.Name.Package) + "." + v.Name.Name
+			meta.TypeName =pkg + "." + v.Name.Name
 		} else {
 			meta.TypeName = v.Name.Name
 		}

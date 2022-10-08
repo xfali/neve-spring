@@ -79,3 +79,11 @@ func (c *ProjectController) Get(projectId string, page int64, pageSize int64, or
 	// Business codes...
 	return entitiy.Response{Data: []entitiy.User{{}}}
 }
+
+// +neve:swagger:apioperation:value="get project name"
+// +neve:requestmapping:value="/project/:projectId/name",method="GET"
+// +neve:pathvariable:name="projectId",required=true
+func (c *ProjectController) GetName(projectId string) string {
+	// Business codes...
+	return ""
+}
