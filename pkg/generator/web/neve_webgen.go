@@ -32,6 +32,7 @@ var (
 		"github.com/gin-gonic/gin",
 		"github.com/xfali/neve-web/gineve/midware/loghttp",
 		"github.com/xfali/neve-core/boot",
+		"github.com/xfali/reflection",
 		"github.com/xfali/neve-utils/neverror",
 		"net/http",
 		"fmt",
@@ -45,7 +46,7 @@ type neveGen struct {
 	pkg        *types.Package
 	imports    namer.ImportTracker
 	pluginMgr  plugin2.Manager
-	plugins    []plugin2.Plugin
+	plugins    map[string]plugin2.Plugin
 }
 
 func NewWebGenerator(name, annotation string, pkg *types.Package, manager plugin2.Manager) *neveGen {
@@ -94,7 +95,7 @@ func (g *neveGen) Namers(ctx *generator.Context) namer.NameSystems {
 // initialization! Do that when your Package constructs the
 // Generators.)
 func (g *neveGen) Init(ctx *generator.Context, w io.Writer) error {
-	g.plugins = nil
+	g.plugins = make(map[string]plugin2.Plugin)
 	return nil
 }
 
@@ -136,7 +137,8 @@ func (g *neveGen) GenerateType(ctx *generator.Context, t *types.Type, w io.Write
 		if err != nil {
 			return fmt.Errorf("Generate by plugin: %s failed, pkg: %s type %s, err: %v. ", p.Name(), g.pkg.Path, t.Name, err)
 		}
-		g.plugins = append(g.plugins, p)
+		// plugin 可能相同，所以使用map根据name保存，因此需要注意plugin的name必须唯一
+		g.plugins[p.Name()] = p
 	}
 	return nil
 }

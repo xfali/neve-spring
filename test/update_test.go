@@ -40,6 +40,13 @@ func TestUpdateAllTemplate(t *testing.T) {
 	}
 }
 
+func TestUpdatGinTemplate(t *testing.T) {
+	err := buildin.WriteBuildinTemplate("plugin", "../pkg/generator/web/template", "../pkg/generator/web/plugin/gin_tpl.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestUpdateProjectTemplate(t *testing.T) {
 	err := buildin.WriteBuildinTemplate("project", "../cmd/neve-spring-gen/commands/project/template", "../cmd/neve-spring-gen/commands/project/project_tpl.go")
 	if err != nil {

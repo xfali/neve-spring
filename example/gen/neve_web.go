@@ -64,3 +64,18 @@ func (c *UserController) Delete(projectId string, userId int64) entitiy.Response
 	// Business codes...
 	return entitiy.Response{Data: entitiy.User{}}
 }
+
+// +neve:controller:value="project"
+// +neve:requestmapping:value="/projects"
+type ProjectController struct {
+}
+
+// +neve:swagger:apioperation:value="get project list"
+// +neve:requestmapping:method="GET"
+// +neve:requestparam:name="page",default="0"
+// +neve:requestparam:name="pageSize",default="20"
+// +neve:loghttp:noresponsebody=true
+func (c *ProjectController) Get(projectId string, page int64, pageSize int64, orderby string) entitiy.Response {
+	// Business codes...
+	return entitiy.Response{Data: []entitiy.User{{}}}
+}
