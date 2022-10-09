@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/xfali/neve-spring/pkg/generator/markerdefs"
 	"github.com/xfali/neve-spring/pkg/stringfunc"
+	"github.com/xfali/neve-spring/pkg/typeutil"
 	"io"
 	"k8s.io/gengo/namer"
 	"net/http"
@@ -231,17 +232,7 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 					return nil, fmt.Errorf("Type %s field %s is private ", t.Name, mname)
 				}
 				m.AutowiredMarker = &autowiredMarker
-				tname := ""
-				if mtype.Kind == types.Pointer {
-					mtype = mtype.Elem
-					tname = "*"
-				}
-				if mtype.Kind == types.Struct || mtype.Kind == types.Interface {
-					imports.AddType(mtype)
-					m.TypeName = tname + imports.LocalNameOf(mtype.Name.Package) + "." + mtype.Name.Name
-				} else {
-					m.TypeName = tname + mtype.Name.Name
-				}
+				m.TypeName = typeutil.TypeName(imports, mtype)
 
 				ret.Fields = append(ret.Fields, m)
 				continue
@@ -307,13 +298,7 @@ func findResult(imports namer.ImportTracker, t *types.Type) []*TypeMeta {
 	ret := make([]*TypeMeta, len(t.Signature.Results))
 	for i, v := range t.Signature.Results {
 		meta := &TypeMeta{}
-		pkg := imports.LocalNameOf(v.Name.Package)
-		if pkg != "" {
-			imports.AddType(v)
-			meta.TypeName =pkg + "." + v.Name.Name
-		} else {
-			meta.TypeName = v.Name.Name
-		}
+		meta.TypeName = typeutil.TypeName(imports, v)
 		ret[i] = meta
 	}
 	return ret

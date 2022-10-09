@@ -75,9 +75,9 @@ type ProjectController struct {
 // +neve:requestparam:name="page",default="0"
 // +neve:requestparam:name="pageSize",default="20"
 // +neve:loghttp:noresponsebody=true
-func (c *ProjectController) Get(projectId string, page int64, pageSize int64, orderby string) entitiy.Response {
+func (c *ProjectController) Get(projectId string, page int64, pageSize int64, orderby string) *entitiy.Response {
 	// Business codes...
-	return entitiy.Response{Data: []entitiy.User{{}}}
+	return &entitiy.Response{Data: []entitiy.User{{}}}
 }
 
 // +neve:swagger:apioperation:value="get project name"

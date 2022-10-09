@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"github.com/xfali/neve-spring/pkg/generator/markerdefs"
 	"github.com/xfali/neve-spring/pkg/stringfunc"
+	"github.com/xfali/neve-spring/pkg/typeutil"
 	"io"
 	"k8s.io/gengo/namer"
 	"net/http"
@@ -253,12 +254,7 @@ func autoFillQuery(imports namer.ImportTracker, name string, param *types.Type) 
 		RequestType: RequestTypeQuery,
 	}
 	ret.Name = name
-	if param.Kind == types.Struct || param.Kind == types.Interface {
-		imports.AddType(param)
-		ret.TypeName = imports.LocalNameOf(param.Name.Package) + "." + param.Name.Name
-	} else {
-		ret.TypeName = param.Name.Name
-	}
+	ret.TypeName = typeutil.TypeName(imports, param)
 	return ret, nil
 }
 
@@ -311,12 +307,7 @@ func findParam(imports namer.ImportTracker, t *types.Type, name string) (*TypeMe
 		if v == name {
 			param := t.Signature.Parameters[i]
 			ret.Name = name
-			if param.Kind == types.Struct || param.Kind == types.Interface {
-				imports.AddType(param)
-				ret.TypeName = imports.LocalNameOf(param.Name.Package) + "." + param.Name.Name
-			} else {
-				ret.TypeName = param.Name.Name
-			}
+			ret.TypeName = typeutil.TypeName(imports, param)
 
 			return ret, true
 		}
@@ -328,13 +319,7 @@ func findResult(imports namer.ImportTracker, t *types.Type) []*TypeMeta {
 	ret := make([]*TypeMeta, len(t.Signature.Results))
 	for i, v := range t.Signature.Results {
 		meta := &TypeMeta{}
-		pkg := imports.LocalNameOf(v.Name.Package)
-		if pkg != "" {
-			imports.AddType(v)
-			meta.TypeName =pkg + "." + v.Name.Name
-		} else {
-			meta.TypeName = v.Name.Name
-		}
+		meta.TypeName = typeutil.TypeName(imports, v)
 		ret[i] = meta
 	}
 	return ret
