@@ -1,6 +1,30 @@
 # neve-spring
 
-## annotations
+## 1. Install
+```
+go install github.com/xfali/neve-spring/cmd/neve-spring-gen
+```
+
+## 2. Usage
+
+### 2.1 Initialize Project
+```
+neve-spring-gen init -o . --main-output cmd/tool-name-dir
+```
+
+### 2.2 Scan and generate neve registration code
+```
+mkdir generated
+cd generated
+neve-spring-gen -i "spring-test/pkg/service" -o . --trim-path-prefix spring-test/pkg/service
+```
+
+### 2.3 Import the generated package in main
+```
+import _ "spring-test/generated"
+```
+
+## 3. annotations
  <table style="width:1344pt">
  <colgroup>
   <col width="166" style="mso-width-source:userset;mso-width-alt:5312;width:125pt"> 
