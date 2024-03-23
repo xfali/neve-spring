@@ -27,6 +27,12 @@ type UserService struct {
 	UserHandler *UserHandler
 }
 
+// +neve:service:value="test"
+type UserService2 struct {
+	// +neve:autowired:name="userHandler",required=true
+	UserHandler *UserHandler
+}
+
 type UserHandler struct {
 }
 

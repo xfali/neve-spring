@@ -40,6 +40,13 @@ func TestUpdateAllTemplate(t *testing.T) {
 	}
 }
 
+func TestUpdatCoreTemplate(t *testing.T) {
+	err := buildin.WriteBuildinTemplate("plugin", "../pkg/generator/core/template", "../pkg/generator/core/plugin/core_tpl.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestUpdatGinTemplate(t *testing.T) {
 	err := buildin.WriteBuildinTemplate("plugin", "../pkg/generator/web/template", "../pkg/generator/web/plugin/gin_tpl.go")
 	if err != nil {
