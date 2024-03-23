@@ -56,10 +56,10 @@ func (arg *cArgs) String() string {
 	return arg.Prefix
 }
 
-func TestWebGen(t *testing.T) {
+func TestGen(t *testing.T) {
 	g := args.Default().WithoutDefaultFlagParsing()
 	g.GoHeaderFilePath = "../hack/boilerplate.txt"
-	g.OutputBase = "."
+	g.OutputBase = "../example/gen/generated"
 	g.OutputFileBaseName = "zz_generated"
 	b, err := NewBuilder(g)
 	if err != nil {
