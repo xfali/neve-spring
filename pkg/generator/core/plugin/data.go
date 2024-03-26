@@ -255,6 +255,9 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 			if err != nil {
 				return nil, err
 			} else if set {
+				if ret.PostConstructMarker != nil {
+					return ret, fmt.Errorf("Duplicate error: Type [%s] already has a PostConstruct method [%s] ", ret.TypeName, ret.PostConstructMarker.MethodName)
+				}
 				if !stringfunc.IsFirstUpper(mname) {
 					return nil, fmt.Errorf("PostConstruct Method %s.%s is private ", t.Name, mname)
 				}
@@ -268,6 +271,9 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 			if err != nil {
 				return nil, err
 			} else if set {
+				if ret.PreDestroyMarker != nil {
+					return ret, fmt.Errorf("Duplicate error: Type [%s] already has a PreDestroy method [%s] ", ret.TypeName, ret.PreDestroyMarker.MethodName)
+				}
 				if !stringfunc.IsFirstUpper(mname) {
 					return nil, fmt.Errorf("PostConstruct Method %s.%s is private ", t.Name, mname)
 				}
