@@ -75,15 +75,17 @@ type Field struct {
 }
 
 type CoreMetadata struct {
-	Name             string
-	TypeName         string
-	ControllerMarker *ControllerMarker
-	ServiceMarker    *ServiceMarker
-	ComponentMarker  *ComponentMarker
-	BeanMarker       *BeanMarker
-	ScopeMarker      *ScopeMarker
-	Fields           []*Field
-	Methods          []*Method
+	Name                string
+	TypeName            string
+	ControllerMarker    *ControllerMarker
+	ServiceMarker       *ServiceMarker
+	ComponentMarker     *ComponentMarker
+	BeanMarker          *BeanMarker
+	ScopeMarker         *ScopeMarker
+	PostConstructMarker *PostConstructMarker
+	PreDestroyMarker    *PreDestroyMarker
+	Fields              []*Field
+	Methods             []*Method
 }
 
 type corePlugin struct {
@@ -248,8 +250,34 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 				continue
 			}
 
+			postConstructMarker := PostConstructMarker{}
+			set, err := markerdefs.Parse(c, &postConstructMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				if !stringfunc.IsFirstUpper(mname) {
+					return nil, fmt.Errorf("PostConstruct Method %s.%s is private ", t.Name, mname)
+				}
+				postConstructMarker.MethodName = mname
+				ret.PostConstructMarker = &postConstructMarker
+				continue
+			}
+
+			preDestroyMarker := &PreDestroyMarker{}
+			set, err = markerdefs.Parse(c, preDestroyMarker)
+			if err != nil {
+				return nil, err
+			} else if set {
+				if !stringfunc.IsFirstUpper(mname) {
+					return nil, fmt.Errorf("PostConstruct Method %s.%s is private ", t.Name, mname)
+				}
+				preDestroyMarker.MethodName = mname
+				ret.PreDestroyMarker = preDestroyMarker
+				continue
+			}
+
 			scopeMarker := ScopeMarker{}
-			set, err := markerdefs.Parse(c, &scopeMarker)
+			set, err = markerdefs.Parse(c, &scopeMarker)
 			if err != nil {
 				return nil, err
 			} else if set {
@@ -281,7 +309,7 @@ func (p *corePlugin) parseType(imports namer.ImportTracker, t *types.Type) (*Cor
 					return nil, fmt.Errorf("Type %s is prototype, method cannot with [bean] annotation ", t.Name)
 				}
 				if !stringfunc.IsFirstUpper(mname) {
-					return nil, fmt.Errorf("Method %s.%s is private ", t.Name, mname)
+					return nil, fmt.Errorf("Bean Method %s.%s is private ", t.Name, mname)
 				}
 				m.BeanMarker = &beanMarker
 				ret.Methods = append(ret.Methods, m)

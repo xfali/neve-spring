@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package plugin
+package project
 
 import (
 	"encoding/base64"

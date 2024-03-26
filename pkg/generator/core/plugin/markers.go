@@ -115,6 +115,36 @@ func (AutowiredMarker) Help() *markers.DefinitionHelp {
 	}
 }
 
+type PostConstructMarker struct {
+	MethodName string `marker:"name,optional"`
+}
+
+func (PostConstructMarker) Help() *markers.DefinitionHelp {
+	return &markers.DefinitionHelp{
+		Category: "PostConstruct",
+		DetailedHelp: markers.DetailedHelp{
+			Summary: "Define PostConstruct.",
+			Details: "",
+		},
+		FieldHelp: map[string]markers.DetailedHelp{},
+	}
+}
+
+type PreDestroyMarker struct {
+	MethodName string `marker:"name,optional"`
+}
+
+func (PreDestroyMarker) Help() *markers.DefinitionHelp {
+	return &markers.DefinitionHelp{
+		Category: "PreDestroy",
+		DetailedHelp: markers.DetailedHelp{
+			Summary: "Define PreDestroy.",
+			Details: "",
+		},
+		FieldHelp: map[string]markers.DetailedHelp{},
+	}
+}
+
 func init() {
 	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:controller", markers.DescribesType, ControllerMarker{})).
 		WithHelp(ControllerMarker{}.Help()))
@@ -127,5 +157,9 @@ func init() {
 	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:scope", markers.DescribesType, ScopeMarker{})).
 		WithHelp(ScopeMarker{}.Help()))
 	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:autowired", markers.DescribesType, AutowiredMarker{})).
+		WithHelp(AutowiredMarker{}.Help()))
+	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:postconstruct", markers.DescribesType, PostConstructMarker{})).
+		WithHelp(AutowiredMarker{}.Help()))
+	markerdefs.Register(markerdefs.Must(markers.MakeDefinition("neve:predestroy", markers.DescribesType, PreDestroyMarker{})).
 		WithHelp(AutowiredMarker{}.Help()))
 }

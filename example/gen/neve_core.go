@@ -19,6 +19,7 @@ package example
 import (
 	"errors"
 	"github.com/xfali/neve-spring/example/gen/entitiy"
+	"log"
 )
 
 // +neve:service
@@ -31,6 +32,33 @@ type UserService struct {
 type UserService2 struct {
 	// +neve:autowired:name="userHandler",required=true
 	UserHandler *UserHandler
+}
+
+// +neve:postconstruct
+func (s *UserService2) Construct() {
+	log.Println("UserService2 Construct")
+}
+
+// +neve:service:value="test"
+type UserService3 struct {
+	// +neve:autowired:name="userHandler",required=true
+	UserHandler *UserHandler
+}
+
+// +neve:postconstruct
+func (s *UserService3) Construct() {
+	log.Println("UserService3 Construct")
+}
+
+func (s *UserService3) BeanAfterSet() error {
+	log.Println("UserService3 BeanAfterSet")
+	return nil
+}
+
+// +neve:predestroy
+func (s *UserService3) Destroy() error {
+	log.Println("UserService3 Destroy")
+	return nil
 }
 
 type UserHandler struct {
